@@ -1,37 +1,25 @@
 from datetime import date, datetime
 import os
-import re
 import sqlite3
 import pandas as pd
-from PIL import Image
 import streamlit as st
 
-# ================= 1. KẾT NỐI CSDL AN TOÀN (TURSO CLOUD / LOCAL SQLITE) =================
-try:
-  USE_TURSO = "TURSO_DATABASE_URL" in st.secrets
-except Exception:
-  USE_TURSO = False
+# ================= 1. KẾT NỐI CSDL LOCAL SQLITE =================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "Report_Database.db")
+IMG_DIR = os.path.join(BASE_DIR, "Anh_kiem_tra_dau_vao")
 
-if USE_TURSO:
-  import libsql_experimental as libsql
+os.makedirs(IMG_DIR, exist_ok=True)
 
 
 def get_db_connection():
-  if USE_TURSO:
-    conn = libsql.connect(
-        database=st.secrets["TURSO_DATABASE_URL"],
-        auth_token=st.secrets.get("TURSO_AUTH_TOKEN", ""),
-    )
-  else:
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    DB_PATH = os.path.join(BASE_DIR, "Report_Database.db")
-    conn = sqlite3.connect(DB_PATH, timeout=30.0)
-    conn.execute("PRAGMA journal_mode=WAL;")
-    conn.row_factory = sqlite3.Row
+  conn = sqlite3.connect(DB_PATH, timeout=30.0)
+  conn.execute("PRAGMA journal_mode=WAL;")
+  conn.row_factory = sqlite3.Row
   return conn
 
 
-# ================= 2. CẤU HÌNH GIAO DIỆN STREAMLIT MOBILE =================
+# ================= 2. CẤU HÌNH GIAO DIỆN MOBILE =================
 st.set_page_config(
     page_title="EMIC QC Mobile Pro",
     page_icon="📱",
@@ -101,6 +89,8 @@ def init_db():
   try:
     conn = get_db_connection()
     cursor = conn.cursor()
+
+    # Bảng nhật ký kiểm tra
     cursor.execute("""
             CREATE TABLE IF NOT EXISTS tb_qc_dau_vao (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -108,11 +98,59 @@ def init_db():
                 so_lot TEXT, ma_vt TEXT, ten_vt TEXT, ncc TEXT, ngay_ve TEXT,
                 tong_sl_ve REAL, sl_kiem REAL, sl_khong_dat REAL, sl_dat REAL,
                 ket_luan TEXT, nguoi_kiem TEXT, ngay_kiem DATETIME, ghi_chu TEXT,
-                img1 TEXT, img2 TEXT
+                kieu_loi TEXT DEFAULT '', img1 TEXT, img2 TEXT
             )
         """)
-    if not USE_TURSO:
-      conn.commit()
+
+    # Tự động bổ sung các cột nếu CSDL cũ chưa có
+    cursor.execute("PRAGMA table_info(tb_qc_dau_vao)")
+    cols = [col[1] for col in cursor.fetchall()]
+    if "loai_qc" not in cols:
+      cursor.execute(
+          "ALTER TABLE tb_qc_dau_vao ADD COLUMN loai_qc TEXT DEFAULT 'DAU_VAO'"
+      )
+    if "kieu_loi" not in cols:
+      cursor.execute(
+          "ALTER TABLE tb_qc_dau_vao ADD COLUMN kieu_loi TEXT DEFAULT ''"
+      )
+
+    # Bảng danh mục kiểu sai hỏng
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS tb_dm_loai_loi (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                phan_he TEXT,
+                ten_loi TEXT
+            )
+        """)
+
+    # Khởi tạo các kiểu lỗi mặc định nếu chưa có
+    cursor.execute("SELECT COUNT(*) FROM tb_dm_loai_loi")
+    if cursor.fetchone()[0] == 0:
+      default_errors = [
+          ("DAU_VAO", "Rỉ sét / Bẩn bề mặt"),
+          ("DAU_VAO", "Cong vênh / Biến dạng"),
+          ("DAU_VAO", "Trầy xước bề mặt"),
+          ("DAU_VAO", "Sai kích thước bản vẽ"),
+          ("DAU_VAO", "Sai nhãn / Mác vật tư"),
+          ("CO_KHI", "Bavia / Khuyết tật gia công"),
+          ("CO_KHI", "Sai kích thước cơ khí"),
+          ("CO_KHI", "Hở mối hàn / Mối ghép"),
+          ("CO_KHI", "Trầy xước / Tróc sơn"),
+          ("TU_TI", "Chập / Đứt cuộn dây"),
+          ("TU_TI", "Sai điện áp / Tỷ số biến"),
+          ("TU_TI", "Hỏng vỏ cách điện"),
+          ("TU_TI", "Lỗi ngoại quan linh kiện"),
+          ("CONG_TO", "Lỗi sai số / Góc pha"),
+          ("CONG_TO", "Lỗi mạch điện tử / Màn hình"),
+          ("CONG_TO", "Lỗi cơ cấu đếm"),
+          ("CONG_TO", "Hỏng vỏ / Vỡ kẹp"),
+      ]
+      cursor.executemany(
+          "INSERT INTO tb_dm_loai_loi (phan_he, ten_loi) VALUES (?, ?)",
+          default_errors,
+      )
+
+    conn.commit()
     conn.close()
   except Exception:
     pass
@@ -135,18 +173,34 @@ def get_last_inspector_name():
   return ""
 
 
+def get_defect_types(phan_he_code):
+  try:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT ten_loi FROM tb_dm_loai_loi WHERE phan_he = ? ORDER BY"
+        " ten_loi ASC",
+        (phan_he_code,),
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return [r["ten_loi"] for r in rows] if rows else ["Chưa xác định", "Khác"]
+  except Exception:
+    return ["Chưa xác định", "Khác"]
+
+
 init_db()
 
 if "saved_inspector_name" not in st.session_state:
   st.session_state["saved_inspector_name"] = get_last_inspector_name()
 
-# ================= 3. BỘ LỌC CHUNG VÀ TỰ ĐỘNG LƯU TÊN =================
+# ================= 3. BỘ LỌC VÀ THÔNG TIN BÁO CÁO =================
 st.markdown("<div class='mobile-card'>", unsafe_allow_html=True)
 
 nguoi_kiem_input = st.text_input(
     "👤 HỌ VÀ TÊN NGƯỜI KIỂM TRA:",
     value=st.session_state["saved_inspector_name"],
-    placeholder="Gõ họ tên người kiểm tại đây...",
+    placeholder="Gõ họ tên người kiểm...",
 )
 if nguoi_kiem_input != st.session_state["saved_inspector_name"]:
   st.session_state["saved_inspector_name"] = nguoi_kiem_input
@@ -177,6 +231,7 @@ if is_qc_dau_vao:
     search_kw = st.text_input(
         "🔎 Tìm kiếm nhanh:", "", placeholder="Mã/Tên/Lot/NCC..."
     )
+  target_phan_he_db = "DAU_VAO"
 else:
   col_f1, col_f2, col_f3 = st.columns(3)
   with col_f1:
@@ -196,6 +251,15 @@ else:
   search_kw = st.text_input(
       "🔎 Tìm kiếm nhanh:", "", placeholder="Số lệnh/Mã/Tên SP..."
   )
+
+  if "Cơ khí" in filter_xuong:
+    target_phan_he_db = "CO_KHI"
+  elif "TU/TI" in filter_xuong:
+    target_phan_he_db = "TU_TI"
+  elif "Công tơ" in filter_xuong:
+    target_phan_he_db = "CONG_TO"
+  else:
+    target_phan_he_db = "SAN_XUAT"
 
 st.markdown("</div>", unsafe_allow_html=True)
 
@@ -282,6 +346,7 @@ if not df_raw.empty:
           "ngay_ve": str(r.get("ngay_ve_dt", "")).split()[0],
           "tong_sl": float(r.get("ft_qty", 0.0) or 0.0),
           "co_mau": float(r.get("by_sample", 5.0) or 5.0),
+          "phan_he": "DAU_VAO",
           "is_checked": is_checked,
       })
   else:
@@ -333,6 +398,7 @@ if not df_raw.empty:
           ],
           "tong_sl": float(r.get("sl_tong", 0.0) or 0.0),
           "co_mau": float(r.get("sl_tong", 10.0) or 10.0),
+          "phan_he": phan_he if phan_he else "CO_KHI",
           "is_checked": is_checked,
       })
 
@@ -392,6 +458,26 @@ if selected_opt != options_list[0]:
         ],
         index=0 if sl_khong_dat == 0 else 1,
     )
+
+  # Ô CHỌN KIỂU SAI HỎNG (Tự hiển thị khi có lỗi hoặc kết luận không đạt)
+  defect_list = get_defect_types(selected_item["phan_he"]) + [
+      "Lỗi khác / Nhập tay"
+  ]
+  kieu_loi_selected = ""
+
+  if sl_khong_dat > 0 or "Đạt tiêu chuẩn" not in ket_luan:
+    col_err1, col_err2 = st.columns(2)
+    with col_err1:
+      loai_loi_opt = st.selectbox(
+          "🚨 KIỂU SAI HỎNG / PHÂN LOẠI LỖI:", defect_list
+      )
+      if loai_loi_opt == "Lỗi khác / Nhập tay":
+        kieu_loi_selected = st.text_input(
+            "Tên lỗi cụ thể:", placeholder="Gõ mô tả lỗi ngắn..."
+        )
+      else:
+        kieu_loi_selected = loai_loi_opt
+
   with col_res2:
     ghi_chu = st.text_input("📝 GHI CHÚ BỔ SUNG:", placeholder="Mô tả chi tiết lỗi...")
 
@@ -406,10 +492,6 @@ if selected_opt != options_list[0]:
     if not nguoi_kiem_input.strip():
       st.error("❌ Vui lòng nhập Họ và tên Người kiểm tra!")
     else:
-      BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-      IMG_DIR = os.path.join(BASE_DIR, "Anh_kiem_tra_dau_vao")
-      os.makedirs(IMG_DIR, exist_ok=True)
-
       img1_path, img2_path = "", ""
       time_str = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -428,8 +510,8 @@ if selected_opt != options_list[0]:
         cursor.execute(
             """
                     INSERT INTO tb_qc_dau_vao 
-                    (loai_qc, so_lot, ma_vt, ten_vt, ncc, ngay_ve, tong_sl_ve, sl_kiem, sl_khong_dat, sl_dat, ket_luan, nguoi_kiem, ngay_kiem, ghi_chu, img1, img2)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (loai_qc, so_lot, ma_vt, ten_vt, ncc, ngay_ve, tong_sl_ve, sl_kiem, sl_khong_dat, sl_dat, ket_luan, nguoi_kiem, ngay_kiem, ghi_chu, kieu_loi, img1, img2)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
             (
                 "DAU_VAO" if is_qc_dau_vao else "SAN_XUAT",
@@ -446,12 +528,12 @@ if selected_opt != options_list[0]:
                 nguoi_kiem_input.strip(),
                 datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 ghi_chu,
+                kieu_loi_selected,
                 img1_path,
                 img2_path,
             ),
         )
-        if not USE_TURSO:
-          conn.commit()
+        conn.commit()
         conn.close()
 
         st.session_state["saved_inspector_name"] = nguoi_kiem_input.strip()

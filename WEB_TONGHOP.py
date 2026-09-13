@@ -15,7 +15,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
 
-# ================= 1. KẾT NỐI CSDL LOCAL SQLITE =================
+# ================= 1. KẾT NỐI CSDL AN TOÀN & TỰ ĐỘNG CẬP NHẬT CẤU TRÚC =================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "Report_Database.db")
 IMG_DIR = os.path.join(BASE_DIR, "Anh_kiem_tra_dau_vao")
@@ -24,11 +24,70 @@ os.makedirs(IMG_DIR, exist_ok=True)
 
 
 def get_db_connection():
-  conn = sqlite3.connect(DB_PATH, timeout=30.0)
-  conn.execute("PRAGMA journal_mode=WAL;")
-  conn.row_factory = sqlite3.Row
-  return conn
+  # Xử lý an toàn kiểm tra st.secrets tránh lỗi StreamlitSecretNotFoundError khi chạy local
+  try:
+    USE_TURSO = "TURSO_DATABASE_URL" in st.secrets
+  except Exception:
+    USE_TURSO = False
 
+  if USE_TURSO:
+    import libsql_experimental as libsql
+
+    return libsql.connect(
+        database=st.secrets["TURSO_DATABASE_URL"],
+        auth_token=st.secrets.get("TURSO_AUTH_TOKEN", ""),
+    )
+  else:
+    conn = sqlite3.connect(DB_PATH, timeout=30.0)
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_db():
+  try:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Bảng nhật ký kiểm tra
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS tb_qc_dau_vao (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                loai_qc TEXT DEFAULT 'DAU_VAO',
+                so_lot TEXT, ma_vt TEXT, ten_vt TEXT, ncc TEXT, ngay_ve TEXT,
+                tong_sl_ve REAL, sl_kiem REAL, sl_khong_dat REAL, sl_dat REAL,
+                ket_luan TEXT, nguoi_kiem TEXT, ngay_kiem DATETIME, ghi_chu TEXT,
+                kieu_loi TEXT DEFAULT '', img1 TEXT, img2 TEXT
+            )
+        """)
+
+    # Tự động cập nhật cột loai_qc và kieu_loi nếu CSDL cũ chưa có
+    cursor.execute("PRAGMA table_info(tb_qc_dau_vao)")
+    cols = [col[1] for col in cursor.fetchall()]
+    if "loai_qc" not in cols:
+      cursor.execute(
+          "ALTER TABLE tb_qc_dau_vao ADD COLUMN loai_qc TEXT DEFAULT 'DAU_VAO'"
+      )
+    if "kieu_loi" not in cols:
+      cursor.execute(
+          "ALTER TABLE tb_qc_dau_vao ADD COLUMN kieu_loi TEXT DEFAULT ''"
+      )
+
+    # Bảng danh mục loại lỗi
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS tb_dm_loai_loi (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                phan_he TEXT,
+                ten_loi TEXT
+            )
+        """)
+    conn.commit()
+    conn.close()
+  except Exception:
+    pass
+
+
+init_db()
 
 # ================= 2. CẤU HÌNH DASHBOARD & HỆ THỐNG THIẾT KẾ =================
 st.set_page_config(
@@ -566,7 +625,7 @@ render_page_header(
 )
 
 
-# ================= 5. NAVIGATION TABS (5 TABS) =================
+# ================= 5. NAVIGATION TABS (5 TABS NGUYÊN BẢN) =================
 tab_vat_tu, tab_co_khi, tab_tuti, tab_cong_to, tab_danh_sach = st.tabs([
     "📋 Báo Cáo Vật Tư",
     "⚙️ Báo Cáo Cơ Khí",
@@ -575,7 +634,7 @@ tab_vat_tu, tab_co_khi, tab_tuti, tab_cong_to, tab_danh_sach = st.tabs([
     "🔍 Danh Sách Chi Tiết & Năng Suất",
 ])
 
-# ================= 6. TAB 1: BÁO CÁO VẬT TƯ =================
+# ================= 6. TAB 1: BÁO CÁO VẬT TƯ (NGUYÊN BẢN CÓ ĐỦ BIỂU ĐỒ) =================
 with tab_vat_tu:
   if df_qa32.empty:
     st.info("💡 Chưa có dữ liệu QA32 trong khoảng thời gian đã chọn.")
@@ -1030,7 +1089,7 @@ with tab_vat_tu:
       st.success("🎉 Không có vật tư nào bị Block hoặc UD 02, 03")
 
 
-# ================= 7. HÀM COOIS VỚI TỶ LỆ CÂN BẰNG & ĐƯỜNG SAI HỎNG (%) =================
+# ================= 7. HÀM COOIS CÓ ĐỦ BIỂU ĐỒ VÀ XUẤT EXCEL =================
 def render_coois_tab_layout(phan_he_code, title_text):
   df_sub = (
       df_coois[df_coois["phan_he"] == phan_he_code]
@@ -1688,16 +1747,17 @@ def render_coois_tab_layout(phan_he_code, title_text):
     )
 
 
-# ================= 8. TAB 5: DANH SÁCH CHI TIẾT VẬT TƯ, LỆNH SẢN XUẤT & BÁO CÁO NĂNG SUẤT =================
+# ================= 8. TAB 5: DANH SÁCH CHI TIẾT & BÁO CÁO SAI HỎNG =================
 with tab_danh_sach:
   render_section_heading(
       "🔍 QUẢN LÝ DANH SÁCH CHI TIẾT VẬT TƯ, LỆNH SẢN XUẤT & NĂNG SUẤT"
   )
 
-  tab_sub_vt, tab_sub_lenh, tab_sub_nangsuat = st.tabs([
+  tab_sub_vt, tab_sub_lenh, tab_sub_nangsuat, tab_sub_sai_hong = st.tabs([
       "📦 1. Danh Sách Vật Tư (QA32)",
       "⚙️ 2. Danh Sách Lệnh Kiểm Tra / Sản Xuất (COOIS)",
       "👨‍💼 3. Báo Cáo Năng Suất Cá Nhân (Nhật Ký QC)",
+      "🚨 4. Báo Cáo Sai Hỏng Chi Tiết & DM Lỗi",
   ])
 
   # SUB-TAB 1: QA32
@@ -2209,7 +2269,154 @@ with tab_danh_sach:
     except Exception as e:
       st.error(f"⚠️ Lỗi khi tải nhật ký QC: {e}")
 
-# ================= 9. RENDER NỘI DUNG CÁC TAB BÁO CÁO =================
+  # SUB-TAB 4: BÁO CÁO SAI HỎNG CHI TIẾT & BẢNG QUẢN LÝ DANH MỤC LỖI
+  with tab_sub_sai_hong:
+    st.markdown("#### 🚨 BÁO CÁO PHÂN TÍCH SAI HỎNG & BẢNG LOẠI LỖI")
+
+    sub_sh1, sub_sh2 = st.tabs(
+        ["📊 1. Thống Kê & Phân Tích Sai Hỏng", "⚙️ 2. Quản Lý Danh Mục Loại Lỗi"]
+    )
+
+    with sub_sh1:
+      try:
+        conn = get_db_connection()
+        df_defects = pd.read_sql_query(
+            "SELECT * FROM tb_qc_dau_vao WHERE sl_khong_dat > 0 OR (kieu_loi"
+            " IS NOT NULL AND kieu_loi != '') ORDER BY ngay_kiem DESC",
+            conn,
+        )
+        conn.close()
+
+        if not df_defects.empty:
+          col_sh_f1, col_sh_f2 = st.columns(2)
+          with col_sh_f1:
+            sh_filter_loai = st.selectbox(
+                "Lọc Phân Hệ:",
+                ["Tất cả", "DAU_VAO", "CO_KHI", "TU_TI", "CONG_TO"],
+                key="sh_flt_ph",
+            )
+
+          df_sh_view = df_defects.copy()
+          if sh_filter_loai != "Tất cả":
+            df_sh_view = df_sh_view[
+                df_sh_view["loai_qc"].str.contains(sh_filter_loai, na=False)
+                | df_sh_view["ncc"].str.contains(sh_filter_loai, na=False)
+            ]
+
+          if not df_sh_view.empty and "kieu_loi" in df_sh_view.columns:
+            defect_counts = (
+                df_sh_view.groupby("kieu_loi")["sl_khong_dat"]
+                .sum()
+                .reset_index()
+            )
+            defect_counts = defect_counts[defect_counts["kieu_loi"] != ""]
+            defect_counts = defect_counts.sort_values(
+                by="sl_khong_dat", ascending=False
+            )
+
+            if not defect_counts.empty:
+              fig_err = go.Figure(
+                  go.Bar(
+                      x=defect_counts["sl_khong_dat"],
+                      y=defect_counts["kieu_loi"],
+                      orientation="h",
+                      marker=dict(color=COLOR_DANGER),
+                      text=[f"{v:,.0f}" for v in defect_counts["sl_khong_dat"]],
+                      textposition="outside",
+                  )
+              )
+              fig_err.update_layout(
+                  title="<b>TOP CÁC KIỂU SAI HỎNG PHÁT HIỆN NHIỀU NHẤT</b>",
+                  margin=dict(l=10, r=40, t=40, b=10),
+                  height=320,
+                  paper_bgcolor="#FFFFFF",
+                  plot_bgcolor="#FFFFFF",
+              )
+              st.plotly_chart(fig_err, use_container_width=True)
+
+          st.markdown("##### 📋 Danh Sách Ca Báo Lỗi Chi Tiết")
+          df_sh_display = df_sh_view[[
+              "ngay_kiem",
+              "nguoi_kiem",
+              "so_lot",
+              "ma_vt",
+              "ten_vt",
+              "ncc",
+              "kieu_loi",
+              "sl_khong_dat",
+              "ghi_chu",
+          ]]
+          df_sh_display.columns = [
+              "Thời Gian",
+              "Người Kiểm",
+              "Lô/Lệnh",
+              "Mã Hàng",
+              "Tên Mặt Hàng",
+              "Xưởng/NCC",
+              "Kiểu Sai Hỏng",
+              "SL Lỗi",
+              "Ghi Chú Chi Tiết",
+          ]
+          st.dataframe(
+              df_sh_display, use_container_width=True, hide_index=True
+          )
+
+        else:
+          st.success("🎉 Chưa ghi nhận ca phát sinh sai hỏng nào!")
+      except Exception as e:
+        st.error(f"Lỗi tải báo cáo sai hỏng: {e}")
+
+    with sub_sh2:
+      st.markdown("##### ⚙️ THÊM MỚI KIỂU SAI HỎNG CHO CÁC XƯỞNG")
+      col_add1, col_add2, col_add3 = st.columns([1, 1.5, 1])
+
+      with col_add1:
+        add_phan_he = st.selectbox(
+            "Chọn Xưởng / Phân hệ:",
+            ["DAU_VAO", "CO_KHI", "TU_TI", "CONG_TO"],
+            key="add_ph_loi",
+        )
+      with col_add2:
+        add_ten_loi = st.text_input(
+            "Tên kiểu sai hỏng mới:", placeholder="Gõ tên loại lỗi..."
+        )
+      with col_add3:
+        st.markdown("<div style='height:25px;'></div>", unsafe_allow_html=True)
+        if st.button("➕ Thêm Loại Lỗi", type="primary", use_container_width=True):
+          if add_ten_loi.strip():
+            try:
+              conn = get_db_connection()
+              cursor = conn.cursor()
+              cursor.execute(
+                  "INSERT INTO tb_dm_loai_loi (phan_he, ten_loi) VALUES (?, ?)",
+                  (add_phan_he, add_ten_loi.strip()),
+              )
+              conn.commit()
+              conn.close()
+              st.success(f"✅ Đã thêm loại lỗi: {add_ten_loi.strip()}")
+              st.rerun()
+            except Exception as ex:
+              st.error(f"Lỗi thêm loại lỗi: {ex}")
+          else:
+            st.warning("⚠️ Vui lòng nhập tên loại lỗi!")
+
+      try:
+        conn = get_db_connection()
+        df_dm_loi = pd.read_sql_query(
+            "SELECT id, phan_he, ten_loi FROM tb_dm_loai_loi ORDER BY phan_he"
+            " ASC, ten_loi ASC",
+            conn,
+        )
+        conn.close()
+
+        if not df_dm_loi.empty:
+          st.markdown("##### 📜 Danh Mục Các Loại Lỗi Đang Được Áp Dụng")
+          df_dm_loi.columns = ["ID", "Phân Hệ / Xưởng", "Tên Kiểu Sai Hỏng"]
+          st.dataframe(df_dm_loi, use_container_width=True, hide_index=True)
+      except Exception as ex:
+        st.error(f"Lỗi nạp danh mục loại lỗi: {ex}")
+
+# ================= 9. RENDER NỘI DUNG CÁC TAB BÁO CÁO COOIS =================
 with tab_co_khi:
   render_coois_tab_layout("CO_KHI", "⚙️ BÁO CÁO CƠ KHÍ (LỆNH 3012)")
 with tab_tuti:
