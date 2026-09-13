@@ -6,25 +6,19 @@ import pandas as pd
 from PIL import Image
 import streamlit as st
 
-# ================= 1. KẾT NỐI CSDL TURSO CLOUD / LOCAL DUAL MODE =================
-USE_TURSO = "TURSO_DATABASE_URL" in st.secrets
+# ================= 1. KẾT NỐI CSDL CHUNG TRÊN THƯ MỤC GOOGLE DRIVE =================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "Report_Database.db")
+IMG_DIR = os.path.join(BASE_DIR, "Anh_kiem_tra_dau_vao")
 
-if USE_TURSO:
-  import libsql_experimental as libsql
+os.makedirs(IMG_DIR, exist_ok=True)
 
 
 def get_db_connection():
-  if USE_TURSO:
-    conn = libsql.connect(
-        database=st.secrets["TURSO_DATABASE_URL"],
-        auth_token=st.secrets["TURSO_AUTH_TOKEN"],
-    )
-  else:
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    DB_PATH = os.path.join(BASE_DIR, "Report_Database.db")
-    conn = sqlite3.connect(DB_PATH, timeout=20.0)
-    conn.execute("PRAGMA journal_mode=WAL;")
-    conn.row_factory = sqlite3.Row
+  # Timeout 30s + WAL mode chống khóa file khi nhiều thiết bị mở chung
+  conn = sqlite3.connect(DB_PATH, timeout=30.0)
+  conn.execute("PRAGMA journal_mode=WAL;")
+  conn.row_factory = sqlite3.Row
   return conn
 
 
@@ -97,8 +91,7 @@ def init_db():
                 img1 TEXT, img2 TEXT
             )
         """)
-    if not USE_TURSO:
-      conn.commit()
+    conn.commit()
     conn.close()
   except Exception:
     pass
@@ -215,7 +208,7 @@ options_list = ["-- Chạm để chọn lô hàng cần báo cáo --"] + [
 
 selected_opt = st.selectbox("📋 DANH SÁCH LÔ HÀNG CẦN KIỂM:", options_list, index=0)
 
-# ================= 5. BẢNG FORM BÁO CÁO =================
+# ================= 5. FORM NHẬP BÁO CÁO =================
 if selected_opt != options_list[0]:
   idx = options_list.index(selected_opt) - 1
   selected_lot = filtered_items[idx]
@@ -245,9 +238,7 @@ if selected_opt != options_list[0]:
         "SL KIỂM:", min_value=1, value=int(selected_lot["co_mau"]), step=1
     )
   with col_q2:
-    sl_khong_dat = st.number_input(
-        "SL LỖI:", min_value=0, value=0, step=1
-    )
+    sl_khong_dat = st.number_input("SL LỖI:", min_value=0, value=0, step=1)
   with col_q3:
     sl_dat = max(0, sl_kiem - sl_khong_dat)
     st.number_input("SL ĐẠT:", value=int(sl_dat), disabled=True)
@@ -269,22 +260,19 @@ if selected_opt != options_list[0]:
   with img_col2:
     img2_file = st.file_uploader("📷 Up Ảnh 2", type=["png", "jpg", "jpeg"])
 
-  if st.button("🚀 GỬI BÁO CÁO VỀ CSDL CLOUD", type="primary", use_container_width=True):
+  if st.button("🚀 GỬI BÁO CÁO VỀ HỆ THỐNG", type="primary", use_container_width=True):
     if not nguoi_kiem_final.strip():
-      st.error("❌ Vui lòng điền Người kiểm tra!")
+      st.error("❌ Vui lòng điền tên Người kiểm tra!")
     else:
-      BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-      img_dir = os.path.join(BASE_DIR, "Anh_kiem_tra_dau_vao")
-      os.makedirs(img_dir, exist_ok=True)
       img1_path, img2_path = "", ""
       time_str = datetime.now().strftime("%Y%m%d_%H%M%S")
 
       if img1_file:
-        img1_path = os.path.join(img_dir, f"{time_str}_img1.png")
+        img1_path = os.path.join(IMG_DIR, f"{time_str}_img1.png")
         with open(img1_path, "wb") as f:
           f.write(img1_file.getbuffer())
       if img2_file:
-        img2_path = os.path.join(img_dir, f"{time_str}_img2.png")
+        img2_path = os.path.join(IMG_DIR, f"{time_str}_img2.png")
         with open(img2_path, "wb") as f:
           f.write(img2_file.getbuffer())
 
@@ -315,12 +303,9 @@ if selected_opt != options_list[0]:
                 img2_path,
             ),
         )
-        if not USE_TURSO:
-          conn.commit()
+        conn.commit()
         conn.close()
-        st.success(
-            f"🎉 Gửi báo cáo thành công cho Lô {selected_lot['so_lot']}!"
-        )
+        st.success(f"🎉 Gửi báo cáo thành công cho Lô {selected_lot['so_lot']}!")
         st.cache_data.clear()
       except Exception as e:
         st.error(f"Lỗi khi lưu dữ liệu: {e}")
