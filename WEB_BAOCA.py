@@ -27,27 +27,34 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# Đã sửa lỗi Font CSS: Không dùng '*' để tránh đè phông icon của Streamlit
 st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
-    * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
+    
+    html, body, p, span, label, input, select, button {
+        font-family: 'Plus Jakarta Sans', -apple-system, sans-serif !important;
+    }
     
     .stApp { background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 50%, #F3E8FF 100%) !important; }
     header, #MainMenu, footer { display: none !important; }
     .block-container { padding: 0.5rem 0.5rem 2rem 0.5rem !important; max-width: 100% !important; }
     
+    /* Header Công ty EMIC */
     .app-header {
         background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #EC4899 100%);
-        color: white; padding: 12px 10px; border-radius: 14px; text-align: center;
+        color: white; padding: 14px 10px; border-radius: 14px; text-align: center;
         box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3); margin-bottom: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
     }
-    .emic-logo { font-size: 10px; font-weight: 900; letter-spacing: 1.5px; color: #FDE047; text-transform: uppercase; }
-    .app-title { font-size: 16px; font-weight: 900; color: #FFFFFF; }
+    .emic-company { font-size: 11px; font-weight: 900; letter-spacing: 1px; color: #FDE047; text-transform: uppercase; margin-bottom: 2px; }
+    .emic-dept { font-size: 13px; font-weight: 800; color: #E0E7FF; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .app-title { font-size: 15px; font-weight: 900; color: #FFFFFF; }
 
-    /* Thu nhỏ kích thước ô nhập liệu trên điện thoại */
+    /* Kích thước ô nhập liệu chuẩn mobile */
     .stTextInput input, .stSelectbox select, .stNumberInput input {
-        font-size: 13px !important; height: 40px !important; border-radius: 10px !important;
+        font-size: 13px !important; height: 42px !important; border-radius: 10px !important;
         border: 1.5px solid #CBD5E1 !important; font-weight: 700 !important; background-color: #FFFFFF !important;
     }
     label { font-size: 11px !important; color: #475569 !important; font-weight: 800 !important; margin-bottom: 2px !important; }
@@ -59,7 +66,7 @@ st.markdown(
     }
 
     .mobile-card {
-        background-color: #FFFFFF; padding: 10px; border-radius: 14px;
+        background-color: #FFFFFF; padding: 12px; border-radius: 14px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); border: 1px solid #E2E8F0; margin-bottom: 8px;
     }
     </style>
@@ -67,10 +74,12 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# Header đổi tên Công ty & Phòng QC
 st.markdown(
     """
     <div class='app-header'>
-        <div class='emic-logo'>⚡ TỔNG CÔNG TY THIẾT BỊ ĐIỆN EMIC</div>
+        <div class='emic-company'>🏢 CÔNG TY CỔ PHẦN THIẾT BỊ ĐO ĐIỆN EMIC</div>
+        <div class='emic-dept'>🛡️ PHÒNG QUẢN LÝ CHẤT LƯỢNG</div>
         <div class='app-title'>📱 HỆ THỐNG NHẬP BÁO CÁO QC MOBILE</div>
     </div>
 """,
@@ -234,7 +243,7 @@ is_qc_dau_vao = "Vật tư" in loai_qc_option
 today = date.today()
 first_day_of_month = date(today.year, today.month, 1)
 
-# GOM TOÀN BỘ BỘ LỌC PHỤ VÀO MỘT THẺ THU GỌN (THU GỌN 80% CHIỀU DÀI MÀN HÌNH)
+# GOM BỘ LỌC PHỤ VÀO EXPANDER
 with st.expander("⚙️ BỘ LỌC THỜI GIAN & ĐIỀU KIỆN TÌM KIẾM", expanded=False):
   col_d1, col_d2 = st.columns(2)
   with col_d1:
@@ -261,11 +270,10 @@ with st.expander("⚙️ BỘ LỌC THỜI GIAN & ĐIỀU KIỆN TÌM KIẾM", e
         ["Tất cả", "Bán thành phẩm (Đầu 4)", "Sản phẩm (Đầu 5)"],
     )
 
-# TÌM KIẾM NHANH LUÔN HIỂN THỊ TRỰC TIẾP
 search_kw = st.text_input(
     "🔎 TÌM KIẾM NHANH:",
     "",
-    placeholder="Gõ Số Lệnh / Mã Hàng / Tên SP để lọc...",
+    placeholder="Gõ Số Lệnh / Mã Hàng / Tên SP...",
 )
 
 st.markdown("</div>", unsafe_allow_html=True)
