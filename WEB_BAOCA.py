@@ -90,7 +90,6 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Bảng nhật ký kiểm tra
     cursor.execute("""
             CREATE TABLE IF NOT EXISTS tb_qc_dau_vao (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -98,11 +97,10 @@ def init_db():
                 so_lot TEXT, ma_vt TEXT, ten_vt TEXT, ncc TEXT, ngay_ve TEXT,
                 tong_sl_ve REAL, sl_kiem REAL, sl_khong_dat REAL, sl_dat REAL,
                 ket_luan TEXT, nguoi_kiem TEXT, ngay_kiem DATETIME, ghi_chu TEXT,
-                kieu_loi TEXT DEFAULT '', img1 TEXT, img2 TEXT
+                kieu_loi TEXT DEFAULT '', cong_viec_con TEXT DEFAULT '', img1 TEXT, img2 TEXT
             )
         """)
 
-    # Tự động bổ sung các cột nếu CSDL cũ chưa có
     cursor.execute("PRAGMA table_info(tb_qc_dau_vao)")
     cols = [col[1] for col in cursor.fetchall()]
     if "loai_qc" not in cols:
@@ -113,8 +111,11 @@ def init_db():
       cursor.execute(
           "ALTER TABLE tb_qc_dau_vao ADD COLUMN kieu_loi TEXT DEFAULT ''"
       )
+    if "cong_viec_con" not in cols:
+      cursor.execute(
+          "ALTER TABLE tb_qc_dau_vao ADD COLUMN cong_viec_con TEXT DEFAULT ''"
+      )
 
-    # Bảng danh mục kiểu sai hỏng
     cursor.execute("""
             CREATE TABLE IF NOT EXISTS tb_dm_loai_loi (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -123,31 +124,37 @@ def init_db():
             )
         """)
 
-    # Khởi tạo các kiểu lỗi mặc định nếu chưa có
-    cursor.execute("SELECT COUNT(*) FROM tb_dm_loai_loi")
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS tb_dm_cong_viec (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                phan_he TEXT,
+                ten_cong_viec TEXT
+            )
+        """)
+
+    # Khởi tạo công việc con mặc định nếu chưa có
+    cursor.execute("SELECT COUNT(*) FROM tb_dm_cong_viec")
     if cursor.fetchone()[0] == 0:
-      default_errors = [
-          ("DAU_VAO", "Rỉ sét / Bẩn bề mặt"),
-          ("DAU_VAO", "Cong vênh / Biến dạng"),
-          ("DAU_VAO", "Trầy xước bề mặt"),
-          ("DAU_VAO", "Sai kích thước bản vẽ"),
-          ("DAU_VAO", "Sai nhãn / Mác vật tư"),
-          ("CO_KHI", "Bavia / Khuyết tật gia công"),
-          ("CO_KHI", "Sai kích thước cơ khí"),
-          ("CO_KHI", "Hở mối hàn / Mối ghép"),
-          ("CO_KHI", "Trầy xước / Tróc sơn"),
-          ("TU_TI", "Chập / Đứt cuộn dây"),
-          ("TU_TI", "Sai điện áp / Tỷ số biến"),
-          ("TU_TI", "Hỏng vỏ cách điện"),
-          ("TU_TI", "Lỗi ngoại quan linh kiện"),
-          ("CONG_TO", "Lỗi sai số / Góc pha"),
-          ("CONG_TO", "Lỗi mạch điện tử / Màn hình"),
-          ("CONG_TO", "Lỗi cơ cấu đếm"),
-          ("CONG_TO", "Hỏng vỏ / Vỡ kẹp"),
+      default_tasks = [
+          ("DAU_VAO", "Kiểm tra ngoại quan & kích thước"),
+          ("DAU_VAO", "Kiểm tra thông số kỹ thuật"),
+          ("DAU_VAO", "Kiểm tra đóng gói & nhãn mác"),
+          ("CO_KHI", "Gia công đột dập cơ khí"),
+          ("CO_KHI", "Gia công phay / tiện / hàn"),
+          ("CO_KHI", "Sơn / Mạ bề mặt"),
+          ("CO_KHI", "Lắp ráp cụm vỏ cơ khí"),
+          ("TU_TI", "Quấn dây sơ cấp / thứ cấp"),
+          ("TU_TI", "Đổ keo đúc Epoxy"),
+          ("TU_TI", "Thử nghiệm cao áp & cách điện"),
+          ("TU_TI", "Kiểm tra tỷ số biến & sai số"),
+          ("CONG_TO", "Lắp ráp bo mạch điện tử"),
+          ("CONG_TO", "Hiệu chuẩn & Bật điểm số"),
+          ("CONG_TO", "Thử nghiệm gá đặt nhiệt độ"),
+          ("CONG_TO", "Kiểm tra dán tem & Đóng gói"),
       ]
       cursor.executemany(
-          "INSERT INTO tb_dm_loai_loi (phan_he, ten_loi) VALUES (?, ?)",
-          default_errors,
+          "INSERT INTO tb_dm_cong_viec (phan_he, ten_cong_viec) VALUES (?, ?)",
+          default_tasks,
       )
 
     conn.commit()
@@ -187,6 +194,26 @@ def get_defect_types(phan_he_code):
     return [r["ten_loi"] for r in rows] if rows else ["Chưa xác định", "Khác"]
   except Exception:
     return ["Chưa xác định", "Khác"]
+
+
+def get_sub_tasks(phan_he_code):
+  try:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT ten_cong_viec FROM tb_dm_cong_viec WHERE phan_he = ? ORDER BY"
+        " ten_cong_viec ASC",
+        (phan_he_code,),
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return (
+        [r["ten_cong_viec"] for r in rows]
+        if rows
+        else ["Kiểm tra chung", "Khác"]
+    )
+  except Exception:
+    return ["Kiểm tra chung", "Khác"]
 
 
 init_db()
@@ -231,7 +258,6 @@ if is_qc_dau_vao:
     search_kw = st.text_input(
         "🔎 Tìm kiếm nhanh:", "", placeholder="Mã/Tên/Lot/NCC..."
     )
-  target_phan_he_db = "DAU_VAO"
 else:
   col_f1, col_f2, col_f3 = st.columns(3)
   with col_f1:
@@ -251,15 +277,6 @@ else:
   search_kw = st.text_input(
       "🔎 Tìm kiếm nhanh:", "", placeholder="Số lệnh/Mã/Tên SP..."
   )
-
-  if "Cơ khí" in filter_xuong:
-    target_phan_he_db = "CO_KHI"
-  elif "TU/TI" in filter_xuong:
-    target_phan_he_db = "TU_TI"
-  elif "Công tơ" in filter_xuong:
-    target_phan_he_db = "CONG_TO"
-  else:
-    target_phan_he_db = "SAN_XUAT"
 
 st.markdown("</div>", unsafe_allow_html=True)
 
@@ -436,6 +453,22 @@ if selected_opt != options_list[0]:
       unsafe_allow_html=True,
   )
 
+  # BỔ SUNG Ô CHỌN CÔNG VIỆC CON / CÔNG ĐOẠN
+  sub_task_list = get_sub_tasks(selected_item["phan_he"]) + [
+      "Công việc khác / Nhập tay"
+  ]
+  col_st1, col_st2 = st.columns([1.5, 1])
+  with col_st1:
+    sub_task_opt = st.selectbox(
+        "⚙️ CÔNG VIỆC CON / CÔNG ĐOẠN KIỂM:", sub_task_list
+    )
+    if sub_task_opt == "Công việc khác / Nhập tay":
+      cong_viec_con_selected = st.text_input(
+          "Nhập tên công việc cụ thể:", placeholder="Gõ tên công việc..."
+      )
+    else:
+      cong_viec_con_selected = sub_task_opt
+
   col_q1, col_q2, col_q3 = st.columns(3)
   with col_q1:
     sl_kiem = st.number_input(
@@ -459,7 +492,6 @@ if selected_opt != options_list[0]:
         index=0 if sl_khong_dat == 0 else 1,
     )
 
-  # Ô CHỌN KIỂU SAI HỎNG (Tự hiển thị khi có lỗi hoặc kết luận không đạt)
   defect_list = get_defect_types(selected_item["phan_he"]) + [
       "Lỗi khác / Nhập tay"
   ]
@@ -510,8 +542,8 @@ if selected_opt != options_list[0]:
         cursor.execute(
             """
                     INSERT INTO tb_qc_dau_vao 
-                    (loai_qc, so_lot, ma_vt, ten_vt, ncc, ngay_ve, tong_sl_ve, sl_kiem, sl_khong_dat, sl_dat, ket_luan, nguoi_kiem, ngay_kiem, ghi_chu, kieu_loi, img1, img2)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (loai_qc, so_lot, ma_vt, ten_vt, ncc, ngay_ve, tong_sl_ve, sl_kiem, sl_khong_dat, sl_dat, ket_luan, nguoi_kiem, ngay_kiem, ghi_chu, kieu_loi, cong_viec_con, img1, img2)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
             (
                 "DAU_VAO" if is_qc_dau_vao else "SAN_XUAT",
@@ -529,6 +561,7 @@ if selected_opt != options_list[0]:
                 datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 ghi_chu,
                 kieu_loi_selected,
+                cong_viec_con_selected,
                 img1_path,
                 img2_path,
             ),
