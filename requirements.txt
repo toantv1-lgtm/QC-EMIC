@@ -1,0 +1,7 @@
+streamlit
+pandas
+pillow
+openpyxl
+matplotlib
+plotly
+libsql-experimental
