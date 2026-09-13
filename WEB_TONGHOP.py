@@ -113,8 +113,6 @@ st.markdown(
         #MainMenu { visibility: hidden; }
         footer { visibility: hidden; }
         header[data-testid="stHeader"] { background: transparent !important; box-shadow: none !important; }
-        div[data-baseweb="popover"] { z-index: 999999 !important; }
-        div[data-baseweb="calendar"] { z-index: 999999 !important; }
 
         :root {
             --bg: #F5F6F9;
@@ -151,73 +149,30 @@ st.markdown(
             background: radial-gradient(1100px 480px at 12% -8%, var(--bg-accent) 0%, var(--bg) 55%) !important;
             background-attachment: fixed !important;
         }
-        h1, h2, h3, h4, h5, h6, p, span, div, label { font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif; }
 
-        .main .block-container, div[data-testid="stAppViewBlockContainer"] {
-            padding-top: 1.2rem !important;
-            padding-bottom: 3rem !important;
-            padding-left: 2rem !important;
-            padding-right: 2rem !important;
+        .main .block-container {
+            padding: 1.2rem 2rem 3rem 2rem !important;
             max-width: 1720px !important;
             margin: 0 auto !important;
         }
 
-        .filter-banner {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 16px 22px;
-            box-shadow: var(--shadow);
-            margin-bottom: 22px;
+        section[data-testid="stSidebar"] {
+            background-color: #FFFFFF !important;
+            border-right: 1px solid var(--border) !important;
         }
-        .filter-banner .filter-title {
-            font-size: 13px; font-weight: 700; color: var(--text-muted);
-            text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px;
-            display: flex; align-items: center; gap: 6px;
+        
+        .sidebar-brand {
+            background: linear-gradient(135deg, #1E1B4B 0%, #4F46E5 100%);
+            color: white; padding: 16px; border-radius: 14px; text-align: center; margin-bottom: 16px;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
         }
+        .sidebar-brand .sb-logo { font-size: 10px; font-weight: 800; letter-spacing: 1.5px; color: #93C5FD; text-transform: uppercase; }
+        .sidebar-brand .sb-title { font-size: 16px; font-weight: 900; color: #FFFFFF; margin-top: 3px; }
 
-        .page-header {
-            display: flex; align-items: flex-end; justify-content: space-between;
-            padding-bottom: 16px; margin-bottom: 18px;
-            border-bottom: 1px solid var(--border);
+        .tree-node-title {
+            font-size: 11px; font-weight: 800; color: var(--primary);
+            text-transform: uppercase; letter-spacing: 0.08em; margin: 12px 0 6px 4px;
         }
-        .page-header .ph-title {
-            font-size: 24px; font-weight: 900; color: var(--text); margin: 0;
-            letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px;
-        }
-        .page-header .ph-subtitle { font-size: 12.5px; color: var(--text-muted); margin: 4px 0 0 0; font-weight: 500; }
-        .page-header .ph-meta {
-            font-size: 12px; font-weight: 700; color: var(--primary-dark);
-            background: var(--primary-soft); border: 1px solid #DDE0FF;
-            padding: 7px 15px; border-radius: 999px; white-space: nowrap;
-        }
-
-        .stTabs [data-baseweb="tab-list"] {
-            justify-content: flex-start !important;
-            gap: 24px !important;
-            background-color: transparent !important;
-            padding: 0px !important;
-            border-bottom: 1px solid var(--border) !important;
-            margin-bottom: 22px !important;
-        }
-        .stTabs [data-baseweb="tab"] {
-            background-color: transparent !important;
-            color: var(--text-muted) !important;
-            border-radius: 0px !important;
-            padding: 4px 2px 13px 2px !important;
-            border: none !important;
-            border-bottom: 2.5px solid transparent !important;
-            font-weight: 600 !important;
-            font-size: 14.5px !important;
-            font-family: 'Inter', sans-serif !important;
-            transition: color 0.15s ease, border-color 0.15s ease;
-        }
-        .stTabs [data-baseweb="tab"]:hover { color: var(--text) !important; }
-        .stTabs [aria-selected="true"] {
-            color: var(--primary) !important;
-            border-bottom: 2.5px solid var(--primary) !important;
-        }
-        .stTabs [data-baseweb="tab-highlight"], .stTabs [data-baseweb="tab-border"] { display: none !important; }
 
         .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
         .kpi-card {
@@ -231,10 +186,7 @@ st.markdown(
             background: var(--accent, var(--primary));
         }
         .kpi-card .kpi-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-        .kpi-card .kpi-label {
-            font-size: 11.5px; font-weight: 700; color: var(--text-muted);
-            text-transform: uppercase; letter-spacing: 0.05em;
-        }
+        .kpi-card .kpi-label { font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
         .kpi-card .kpi-icon {
             width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center;
             justify-content: center; font-size: 14px; background: var(--accent-soft, var(--primary-soft));
@@ -432,7 +384,7 @@ def load_data(tu_date, den_date):
     return pd.DataFrame(), pd.DataFrame()
 
 
-# ================= 3. HÀM TẠO EXCEL ĐÍNH KÈM HÌNH ẢNH SẮC NÉT =================
+# ================= 3. HÀM TẠO EXCEL BÁO CÁO =================
 def generate_print_ready_excel(
     phan_he_code,
     title_clean,
@@ -592,59 +544,830 @@ def generate_print_ready_excel(
   return output.getvalue()
 
 
-# ================= 4. BỘ LỌC THỜI GIAN CỐ ĐỊNH =================
-st.markdown('<div class="filter-banner">', unsafe_allow_html=True)
-st.markdown(
-    '<div class="filter-title">📅 BỘ LỌC THỜI GIAN BÁO CÁO TOÀN HỆ THỐNG</div>',
-    unsafe_allow_html=True,
-)
-
-today = date.today()
-first_day_of_month = date(today.year, today.month, 1)
-
-col_f1, col_f2, col_f3 = st.columns([1.5, 1.5, 1.2])
-with col_f1:
-  tu_date = st.date_input("Từ ngày:", first_day_of_month)
-with col_f2:
-  den_date = st.date_input("Đến ngày:", today)
-with col_f3:
-  st.markdown("<div style='height: 25px;'></div>", unsafe_allow_html=True)
-  if st.button("🔄 CẬP NHẬT BÁO CÁO", use_container_width=True, type="primary"):
-    st.cache_data.clear()
-    st.rerun()
-st.markdown("</div>", unsafe_allow_html=True)
-
+# ================= 4. SIDEBAR MENU CÂY 2 CẤP & BỘ LỌC THỜI GIAN =================
 with st.sidebar:
   st.markdown(
-      '<div class="sidebar-heading">⚙️ CẤU HÌNH DỰ PHÒNG</div>',
+      """
+        <div class='sidebar-brand'>
+            <div class='sb-logo'>🏢 TỔNG CÔNG TY EMIC</div>
+            <div class='sb-title'>HỆ THỐNG BÁO CÁO QC</div>
+        </div>
+    """,
       unsafe_allow_html=True,
   )
-  st.info("💡 Bạn cũng có thể chọn ngày ở đây:")
-  sb_tu = st.date_input("Từ ngày (Sidebar)", tu_date, key="sb_tu")
-  sb_den = st.date_input("Đến ngày (Sidebar)", den_date, key="sb_den")
-  if sb_tu != tu_date or sb_den != den_date:
-    tu_date, den_date = sb_tu, sb_den
+
+  st.markdown(
+      "<div class='tree-node-title'>📅 BỘ LỌC THỜI GIAN</div>",
+      unsafe_allow_html=True,
+  )
+  today = date.today()
+  first_day_of_month = date(today.year, today.month, 1)
+
+  tu_date = st.date_input("Từ ngày:", first_day_of_month, key="sb_tu_date")
+  den_date = st.date_input("Đến ngày:", today, key="sb_den_date")
+
+  if st.button("🔄 CẬP NHẬT DỮ LIỆU", type="primary", use_container_width=True):
+    st.cache_data.clear()
+    st.rerun()
+
+  st.markdown("<hr style='margin:14px 0;'>", unsafe_allow_html=True)
+  st.markdown(
+      "<div class='tree-node-title'>🌳 PHÂN CẤP MENU QUẢN LÝ</div>",
+      unsafe_allow_html=True,
+  )
+
+  tree_node_category = st.selectbox(
+      "📁 CHỌN NHÓM BÁO CÁO:",
+      [
+          "1. 📊 Báo Cáo Tiến Độ & Tổng Quan (Charts)",
+          "2. 🔍 Tra Cứu Danh Sách Chi Tiết (SAP Data)",
+          "3. 👨‍💼 Quản Lý Năng Suất & Thiết Lập",
+      ],
+      index=0,
+  )
+
+  if "1." in tree_node_category:
+    selected_sub_leaf = st.radio(
+        "📄 Chọn biểu đồ báo cáo:",
+        [
+            "📋 Báo Cáo Vật Tư (QA32)",
+            "⚙️ Báo Cáo Cơ Khí (3012)",
+            "🔌 Báo Cáo TU/TI (3011)",
+            "⚡ Báo Cáo Công Tơ (3013, 3016)",
+        ],
+        index=0,
+    )
+  elif "2." in tree_node_category:
+    selected_sub_leaf = st.radio(
+        "📄 Chọn bảng chi tiết:",
+        [
+            "📦 Chi Tiết Vật Tư (QA32)",
+            "⚙️ Chi Tiết Lệnh SX (COOIS)",
+        ],
+        index=0,
+    )
+  else:
+    selected_sub_leaf = st.radio(
+        "📄 Chọn quản lý & thiết lập:",
+        [
+            "👨‍💼 Báo Cáo Năng Suất Cá Nhân QC",
+            "⚙️ Quản Lý Công Việc Con Theo Xưởng",
+            "🚨 Báo Cáo Sai Hỏng Chi Tiết & DM Lỗi",
+        ],
+        index=0,
+    )
 
 df_qa32, df_coois = load_data(tu_date, den_date)
 
-render_page_header(
-    "📊 EMIC QC Dashboard Tổng Hợp",
-    "Tổng Công Ty Thiết Bị Điện EMIC · Hệ Thống Báo Cáo QC (Máy Tính Nội Bộ)",
-    f"{tu_date.strftime('%d/%m/%Y')} → {den_date.strftime('%d/%m/%Y')}",
-)
+
+# ================= 5. HÀM COOIS TÍCH HỢP TỰ ĐỘNG SỐ LIỆU SAI HỎNG =================
+def render_coois_tab_layout(phan_he_code, title_text):
+  render_page_header(
+      title_text,
+      "Tiến độ sản xuất, tỷ lệ giao hàng hoàn thành, sản lượng và phân tích"
+      " sai hỏng theo từng dòng sản phẩm",
+      f"{tu_date.strftime('%d/%m/%Y')} → {den_date.strftime('%d/%m/%Y')}",
+  )
+
+  df_sub = (
+      df_coois[df_coois["phan_he"] == phan_he_code]
+      if not df_coois.empty
+      else pd.DataFrame()
+  )
+  if df_sub.empty:
+    st.info(f"💡 Chưa có dữ liệu sản xuất cho phân hệ {title_text}.")
+    return
+
+  # Truy vấn số liệu QC Sai Hỏng từ CSDL Mobile
+  try:
+    conn = get_db_connection()
+    df_qc_sub = pd.read_sql_query(
+        "SELECT so_lot, ma_vt, ten_vt, sl_kiem, sl_khong_dat, kieu_loi,"
+        " cong_viec_con, nguoi_kiem, ngay_kiem FROM tb_qc_dau_vao WHERE loai_qc"
+        " = 'SAN_XUAT' AND (sl_khong_dat > 0 OR (kieu_loi IS NOT NULL AND"
+        " kieu_loi != '')) ORDER BY ngay_kiem DESC",
+        conn,
+    )
+    conn.close()
+  except Exception:
+    df_qc_sub = pd.DataFrame()
+
+  # Ghép nối Lô/Lệnh COOIS với Dòng sản phẩm (mat_prefix)
+  if not df_qc_sub.empty and not df_sub.empty:
+    order_map = dict(
+        zip(df_sub["so_lenh"].astype(str), df_sub["mat_prefix"].astype(str))
+    )
+    code_map = dict(
+        zip(df_sub["ma_tp"].astype(str), df_sub["mat_prefix"].astype(str))
+    )
+
+    df_qc_sub["mat_prefix"] = df_qc_sub["so_lot"].astype(str).map(order_map)
+    df_qc_sub["mat_prefix"] = (
+        df_qc_sub["mat_prefix"]
+        .fillna(df_qc_sub["ma_vt"].astype(str).map(code_map))
+        .fillna("Khác")
+    )
+
+    # Lọc các ca lỗi thuộc phân hệ xưởng này
+    allowed_orders = set(df_sub["so_lenh"].astype(str).unique())
+    allowed_codes = set(df_sub["ma_tp"].astype(str).unique())
+    df_qc_sub = df_qc_sub[
+        df_qc_sub["so_lot"].astype(str).isin(allowed_orders)
+        | df_qc_sub["ma_vt"].astype(str).isin(allowed_codes)
+    ].copy()
+  else:
+    df_qc_sub = pd.DataFrame()
+
+  months_labels = [f"T{i}" for i in range(1, 13)]
+  m_comp_qty, m_uncomp_qty = [0.0] * 12, [0.0] * 12
+  m_tot_orders, m_uncomp_orders = [0] * 12, [0] * 12
+  tot_qty_all, deliv_qty_all = 0.0, 0.0
+
+  for _, r in df_sub.iterrows():
+    try:
+      m_idx = (
+          datetime.strptime(
+              str(r["ngay_lenh_dt"]).split()[0], "%Y-%m-%d"
+          ).month
+          - 1
+      )
+    except Exception:
+      m_idx = 0
+    if not (0 <= m_idx < 12):
+      m_idx = 0
+    sl_t, sl_h = float(r["sl_tong"]), float(r["sl_ht"])
+    uncomp_q = max(0.0, sl_t - sl_h)
+    tot_qty_all += sl_t
+    deliv_qty_all += sl_h
+    m_comp_qty[m_idx] += sl_h
+    m_uncomp_qty[m_idx] += uncomp_q
+    m_tot_orders[m_idx] += 1
+    if sl_h < sl_t:
+      m_uncomp_orders[m_idx] += 1
+
+  m_comp_orders = [m_tot_orders[i] - m_uncomp_orders[i] for i in range(12)]
+  title_clean = clean_emoji(title_text)
+
+  rem_qty_kpi = max(0.0, tot_qty_all - deliv_qty_all)
+  pct_deliv_kpi = (
+      (deliv_qty_all / tot_qty_all * 100) if tot_qty_all > 0 else 0.0
+  )
+  total_orders_kpi = sum(m_tot_orders)
+  tot_defect_qty = (
+      df_qc_sub["sl_khong_dat"].sum() if not df_qc_sub.empty else 0.0
+  )
+  pct_defect_kpi = (
+      (tot_defect_qty / deliv_qty_all * 100.0) if deliv_qty_all > 0 else 0.0
+  )
+
+  render_kpi_cards([
+      {
+          "label": "Tổng Kế Hoạch",
+          "value": f"{int(tot_qty_all):,}",
+          "icon": "🎯",
+          "color": COLOR_PRIMARY,
+          "sub": f"{int(total_orders_kpi):,} lệnh sản xuất",
+      },
+      {
+          "label": "Đã Hoàn Thành",
+          "value": f"{int(deliv_qty_all):,}",
+          "icon": "✅",
+          "color": COLOR_SUCCESS,
+          "sub": f"Tỷ lệ SL: {pct_deliv_kpi:.1f}%",
+      },
+      {
+          "label": "TỔNG SỐ LƯỢNG LỖI",
+          "value": f"{int(tot_defect_qty):,}",
+          "icon": "⚠️",
+          "color": COLOR_DANGER,
+          "sub": f"Tỷ lệ sai hỏng: {pct_defect_kpi:.2f}%",
+      },
+      {
+          "label": "Còn Lại Chưa Xong",
+          "value": f"{int(rem_qty_kpi):,}",
+          "icon": "⏳",
+          "color": COLOR_WARNING,
+          "sub": f"{int(sum(m_uncomp_orders)):,} lệnh chưa xong",
+      },
+  ])
+
+  PLOT_HEIGHT = 380
+
+  col1, col2 = st.columns([2.1, 1.0])
+  with col1:
+    chart_card_open(
+        f"Sản Lượng & Tỷ Lệ Hoàn Thành — {title_clean}", "Theo tháng"
+    )
+    fig1 = make_subplots(specs=[[{"secondary_y": True}]])
+
+    fig1.add_trace(
+        go.Bar(
+            x=months_labels,
+            y=m_comp_qty,
+            name="SL Hoàn Thành",
+            marker_color=COLOR_SUCCESS,
+            text=[f"{int(v):,}" if v > 0 else "" for v in m_comp_qty],
+            textposition="inside",
+            textfont=dict(size=9.5, family=PLOTLY_FONT, color="#FFFFFF"),
+        ),
+        secondary_y=False,
+    )
+    fig1.add_trace(
+        go.Bar(
+            x=months_labels,
+            y=m_uncomp_qty,
+            name="SL Chưa Xong",
+            marker_color=COLOR_WARNING,
+            base=m_comp_qty,
+            text=[f"{int(v):,}" if v > 0 else "" for v in m_uncomp_qty],
+            textposition="inside",
+            textfont=dict(size=9.5, family=PLOTLY_FONT, color="#FFFFFF"),
+        ),
+        secondary_y=False,
+    )
+    pct_hoanthanh_m = [
+        (m_comp_qty[i] / (m_comp_qty[i] + m_uncomp_qty[i]) * 100.0)
+        if (m_comp_qty[i] + m_uncomp_qty[i]) > 0
+        else None
+        for i in range(12)
+    ]
+    fig1.add_trace(
+        go.Scatter(
+            x=months_labels,
+            y=pct_hoanthanh_m,
+            name="% Hoàn Thành",
+            mode="lines+markers+text",
+            line=dict(color=COLOR_PRIMARY, width=2.5),
+            marker=dict(size=6, color=COLOR_PRIMARY),
+            text=[f"{v:.0f}%" if v is not None else "" for v in pct_hoanthanh_m],
+            textposition="top center",
+            textfont=dict(size=10, family=PLOTLY_FONT, color=COLOR_PRIMARY),
+            connectgaps=False,
+        ),
+        secondary_y=True,
+    )
+
+    fig1.update_layout(
+        barmode="stack",
+        margin=dict(l=30, r=20, t=8, b=55),
+        height=PLOT_HEIGHT,
+        paper_bgcolor="#FFFFFF",
+        plot_bgcolor="#FFFFFF",
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=-0.22,
+            xanchor="center",
+            x=0.5,
+            font=dict(size=11, family=PLOTLY_FONT, color="#6B7280"),
+        ),
+    )
+    fig1.update_xaxes(
+        showgrid=False, tickfont=dict(size=11, family=PLOTLY_FONT, color="#6B7280")
+    )
+    fig1.update_yaxes(
+        title_text="← Sản Lượng",
+        title_font=dict(size=12, color=COLOR_SUCCESS),
+        tickformat="~s",
+        secondary_y=False,
+        showgrid=True,
+        gridcolor=PLOTLY_GRID,
+    )
+    fig1.update_yaxes(
+        title_text="% Hoàn Thành →",
+        title_font=dict(size=12, color=COLOR_PRIMARY),
+        tickformat=".0f",
+        ticksuffix="%",
+        range=[0, 105],
+        secondary_y=True,
+        showgrid=False,
+    )
+
+    st.plotly_chart(
+        fig1,
+        use_container_width=True,
+        config={"displayModeBar": False},
+        key=f"coois_fig1_{phan_he_code}",
+    )
+    chart_card_close()
+
+  with col2:
+    chart_card_open("Tỷ Lệ Hoàn Thành Tổng Quan")
+    pct_deliv = (deliv_qty_all / tot_qty_all * 100) if tot_qty_all > 0 else 0
+    pct_rem = 100.0 - pct_deliv if tot_qty_all > 0 else 0.0
+
+    fig2 = go.Figure(
+        data=[
+            go.Pie(
+                labels=["Hoàn thành", "Chưa xong"],
+                values=[deliv_qty_all, rem_qty_kpi],
+                hole=0.6,
+                marker=dict(
+                    colors=[COLOR_SUCCESS, COLOR_WARNING],
+                    line=dict(color="#FFFFFF", width=3),
+                ),
+                text=[
+                    f"<b>Hoàn thành</b><br>{pct_deliv:.1f}%<br>({int(deliv_qty_all):,})",
+                    f"<b>Chưa xong</b><br>{pct_rem:.1f}%<br>({int(rem_qty_kpi):,})",
+                ],
+                textinfo="text",
+                textposition="outside",
+                direction="clockwise",
+                sort=False,
+            )
+        ]
+    )
+    fig2.update_layout(
+        margin=dict(l=95, r=95, t=30, b=30),
+        height=PLOT_HEIGHT,
+        paper_bgcolor="#FFFFFF",
+        showlegend=False,
+    )
+    st.plotly_chart(
+        fig2,
+        use_container_width=True,
+        config={"displayModeBar": False},
+        key=f"coois_fig2_{phan_he_code}",
+    )
+    chart_card_close()
+
+  # HÀNG 2: BỘ LỌC DÒNG SP VÀ PHÂN TÍCH SAI HỎNG TƯƠNG ỨNG
+  sub_5 = (
+      df_sub[
+          df_sub["ma_tp"]
+          .astype(str)
+          .str.split(".")
+          .str[0]
+          .str.lstrip("0")
+          .str.startswith("5")
+      ].copy()
+      if not df_sub.empty
+      else pd.DataFrame()
+  )
+  raw_fams = (
+      [
+          str(x).strip()
+          for x in sub_5["mat_prefix"].unique()
+          if pd.notna(x)
+          and str(x).strip()
+          and str(x).strip().lower() not in ["none", "nan"]
+      ]
+      if not sub_5.empty
+      else []
+  )
+  available_fams = ["Tất cả dòng sản phẩm"] + sorted(list(set(raw_fams)))
+  sel_fam = st.selectbox(
+      "🎯 Chọn Dòng SP (Đầu 5):", available_fams, key=f"cb_{phan_he_code}"
+  )
+
+  col3, col4 = st.columns([1, 1])
+
+  with col3:
+    chart_card_open(f"Sản Lượng — Dòng: {clean_emoji(sel_fam)}")
+    m3_qty = [0.0] * 12
+    if not sub_5.empty:
+      sub_5_df = sub_5.copy()
+      sub_5_df["month"] = pd.to_datetime(
+          sub_5_df["ngay_lenh_dt"], errors="coerce"
+      ).dt.month
+      sub_filtered = (
+          sub_5_df[sub_5_df["mat_prefix"] == sel_fam]
+          if sel_fam != "Tất cả dòng sản phẩm"
+          else sub_5_df
+      )
+      for _, r in sub_filtered.iterrows():
+        m_val = r["month"]
+        if pd.notna(m_val) and 1 <= int(m_val) <= 12:
+          m3_qty[int(m_val) - 1] += float(r["sl_ht"])
+
+    fig3 = go.Figure()
+    fig3.add_trace(
+        go.Bar(
+            x=months_labels,
+            y=m3_qty,
+            name="SL Sản Xuất",
+            marker=dict(color=COLOR_PRIMARY, cornerradius=6),
+            text=[f"{int(v):,}" if v > 0 else "" for v in m3_qty],
+            textposition="outside",
+            textfont=dict(color=COLOR_PRIMARY, size=11, family=PLOTLY_FONT),
+        )
+    )
+
+    fig3.update_layout(
+        margin=dict(l=30, r=20, t=8, b=36),
+        height=PLOT_HEIGHT - 40,
+        paper_bgcolor="#FFFFFF",
+        plot_bgcolor="#FFFFFF",
+        showlegend=False,
+    )
+    st.plotly_chart(
+        fig3,
+        use_container_width=True,
+        config={"displayModeBar": False},
+        key=f"coois_fig3_{phan_he_code}",
+    )
+    chart_card_close()
+
+  with col4:
+    chart_card_open("Tổng Sản Lượng Cả Năm Các Mã Đầu 5")
+    if not sub_5.empty:
+      summary_fams = (
+          sub_5.groupby("mat_prefix")[["sl_ht"]].sum().reset_index()
+      )
+      fams_x = [
+          str(val)
+          for val in summary_fams["mat_prefix"].tolist()
+          if pd.notna(val)
+          and str(val).strip()
+          and str(val).strip().lower() not in ["none", "nan"]
+      ]
+      if not fams_x:
+        fams_x, deliv_fams = ["Trống"], [0.0]
+      else:
+        summary_fams = summary_fams[summary_fams["mat_prefix"].isin(fams_x)]
+        fams_x, deliv_fams = (
+            summary_fams["mat_prefix"].tolist(),
+            summary_fams["sl_ht"].values,
+        )
+    else:
+      fams_x, deliv_fams = ["Không có SP"], [0.0]
+
+    if len(fams_x) > 1:
+      pairs = sorted(zip(fams_x, deliv_fams), key=lambda p: p[1], reverse=True)
+      fams_x = [p[0] for p in pairs]
+      deliv_fams = [p[1] for p in pairs]
+
+    bar_colors = [
+        DISTINCT_COLORS[i % len(DISTINCT_COLORS)] for i in range(len(fams_x))
+    ]
+
+    fig4 = go.Figure()
+    fig4.add_trace(
+        go.Bar(
+            x=fams_x,
+            y=deliv_fams,
+            marker=dict(color=bar_colors, cornerradius=6),
+            text=[f"{int(v):,}" if v > 0 else "" for v in deliv_fams],
+            textposition="outside",
+            textfont=dict(color=bar_colors, size=11, family=PLOTLY_FONT),
+        )
+    )
+
+    fig4.update_layout(
+        margin=dict(l=30, r=20, t=8, b=36),
+        height=PLOT_HEIGHT - 40,
+        paper_bgcolor="#FFFFFF",
+        plot_bgcolor="#FFFFFF",
+        showlegend=False,
+    )
+    fig4.update_yaxes(type="log", dtick=1)
+    st.plotly_chart(
+        fig4,
+        use_container_width=True,
+        config={"displayModeBar": False},
+        key=f"coois_fig4_{phan_he_code}",
+    )
+    chart_card_close()
+
+  # HÀNG 3: BỔ SUNG BIỂU ĐỒ VÀ BẢNG SAI HỎNG ỨNG VỚI DÒNG SẢN PHẨM ĐÃ CHỌN
+  st.markdown(
+      f"#### 🚨 PHÂN TÍCH SAI HỎNG DÒNG SẢN PHẨM: {clean_emoji(sel_fam)}"
+  )
+  col_sh_fam1, col_sh_fam2 = st.columns([1.1, 1.5])
+
+  df_qc_fam = df_qc_sub.copy()
+  if sel_fam != "Tất cả dòng sản phẩm" and not df_qc_fam.empty:
+    df_qc_fam = df_qc_fam[df_qc_fam["mat_prefix"] == sel_fam]
+
+  with col_sh_fam1:
+    chart_card_open(f"Top Kiểu Lỗi — Dòng: {clean_emoji(sel_fam)}")
+    if not df_qc_fam.empty and "kieu_loi" in df_qc_fam.columns:
+      df_err_agg = (
+          df_qc_fam.groupby("kieu_loi")["sl_khong_dat"].sum().reset_index()
+      )
+      df_err_agg = df_err_agg[df_err_agg["kieu_loi"] != ""].sort_values(
+          by="sl_khong_dat", ascending=True
+      )
+
+      if not df_err_agg.empty:
+        fig_err_fam = go.Figure(
+            go.Bar(
+                x=df_err_agg["sl_khong_dat"],
+                y=df_err_agg["kieu_loi"],
+                orientation="h",
+                marker=dict(color=COLOR_DANGER),
+                text=[f"{v:,.0f}" for v in df_err_agg["sl_khong_dat"]],
+                textposition="outside",
+            )
+        )
+        fig_err_fam.update_layout(
+            margin=dict(l=10, r=40, t=10, b=10),
+            height=260,
+            paper_bgcolor="#FFFFFF",
+            plot_bgcolor="#FFFFFF",
+        )
+        st.plotly_chart(
+            fig_err_fam,
+            use_container_width=True,
+            key=f"err_fam_chart_{phan_he_code}",
+        )
+      else:
+        st.success("🎉 Không ghi nhận kiểu sai hỏng nào!")
+    else:
+      st.success("🎉 Không có ca báo lỗi nào thuộc dòng SP này!")
+    chart_card_close()
+
+  with col_sh_fam2:
+    chart_card_open(f"Nhật Ký Sai Hỏng Chi Tiết — Dòng: {clean_emoji(sel_fam)}")
+    if not df_qc_fam.empty:
+      df_qc_fam_disp = df_qc_fam[[
+          "ngay_kiem",
+          "nguoi_kiem",
+          "so_lot",
+          "ma_vt",
+          "ten_vt",
+          "cong_viec_con",
+          "kieu_loi",
+          "sl_khong_dat",
+      ]].copy()
+      df_qc_fam_disp.columns = [
+          "Thời Gian",
+          "Người Kiểm",
+          "Lệnh SX",
+          "Mã SP",
+          "Tên SP",
+          "Công Đoạn",
+          "Kiểu Sai Hỏng",
+          "SL Lỗi",
+      ]
+      st.dataframe(
+          df_qc_fam_disp, use_container_width=True, hide_index=True, height=230
+      )
+    else:
+      st.info("💡 Chưa có nhật ký báo lỗi cho dòng sản phẩm này.")
+    chart_card_close()
+
+  # ================= XUẤT ẢNH MATPLOTLIB ẨN CHO EXCEL =================
+  fig1_mpl, ax_m1 = plt.subplots(figsize=(8, 3.2), dpi=200)
+  ax_m1_twin = ax_m1.twinx()
+  ax_m1.bar(
+      np.arange(12) - 0.18,
+      m_comp_orders,
+      width=0.35,
+      color=COLOR_PRIMARY,
+      label="Lệnh HT",
+  )
+  ax_m1.bar(
+      np.arange(12) - 0.18,
+      m_uncomp_orders,
+      width=0.35,
+      bottom=m_comp_orders,
+      color=COLOR_DANGER,
+      label="Lệnh Chưa Xong",
+  )
+  ax_m1_twin.bar(
+      np.arange(12) + 0.18,
+      m_comp_qty,
+      width=0.35,
+      color=COLOR_SUCCESS,
+      label="SL HT",
+  )
+  ax_m1_twin.bar(
+      np.arange(12) + 0.18,
+      m_uncomp_qty,
+      width=0.35,
+      bottom=m_comp_qty,
+      color=COLOR_WARNING,
+      label="SL Chưa Xong",
+  )
+  ax_m1.set_title(f"TIẾN ĐỘ SẢN XUẤT - {title_clean}", fontweight="bold")
+  ax_m1.set_xticks(np.arange(12))
+  ax_m1.set_xticklabels(months_labels)
+  ax_m1_twin.set_yscale("symlog", linthresh=100)
+  plt.close(fig1_mpl)
+
+  fig2_mpl, ax_m2 = plt.subplots(figsize=(4, 3.2), dpi=200)
+  ax_m2.set_aspect("equal")
+  if tot_qty_all > 0:
+    ax_m2.pie(
+        [deliv_qty_all, rem_qty_kpi],
+        labels=["Hoàn thành", "Chưa xong"],
+        colors=[COLOR_SUCCESS, COLOR_WARNING],
+        autopct="%1.1f%%",
+        startangle=140,
+        wedgeprops=dict(width=0.35, edgecolor="white"),
+    )
+  ax_m2.set_title("TỶ LỆ HOÀN THÀNH TỔNG QUAN", fontweight="bold")
+  plt.close(fig2_mpl)
+
+  fig3_mpl, ax_m3 = plt.subplots(figsize=(6, 3.0), dpi=200)
+  ax_m3.bar(np.arange(12), m3_qty, width=0.45, color=COLOR_PRIMARY)
+  ax_m3.set_xticks(np.arange(12))
+  ax_m3.set_xticklabels(months_labels)
+  ax_m3.set_yscale("symlog", linthresh=100)
+  ax_m3.set_title(f"SẢN LƯỢNG - DÒNG: {clean_emoji(sel_fam)}", fontweight="bold")
+  plt.close(fig3_mpl)
+
+  fig4_mpl, ax_m4 = plt.subplots(figsize=(6, 3.0), dpi=200)
+  ax_m4.bar(np.arange(len(fams_x)), deliv_fams, width=0.45, color=bar_colors)
+  ax_m4.set_xticks(np.arange(len(fams_x)))
+  ax_m4.set_xticklabels(fams_x)
+  ax_m4.set_yscale("symlog", linthresh=100)
+  ax_m4.set_title("TỔNG SẢN LƯỢNG CẢ NĂM CÁC MÃ ĐẦU 5", fontweight="bold")
+  plt.close(fig4_mpl)
+
+  # ================= BẢNG SỐ LIỆU TỔNG HỢP & NÚT EXCEL =================
+  pct_orders_m = [
+      ((m_comp_orders[i] / m_tot_orders[i]) * 100.0)
+      if m_tot_orders[i] > 0
+      else 0.0
+      for i in range(12)
+  ]
+  pct_qty_m = [
+      ((m_comp_qty[i] / (m_comp_qty[i] + m_uncomp_qty[i])) * 100.0)
+      if (m_comp_qty[i] + m_uncomp_qty[i]) > 0
+      else 0.0
+      for i in range(12)
+  ]
+  total_m3 = sum(m3_qty)
+  pct_fam_contrib = [
+      ((m3_qty[i] / total_m3) * 100.0) if total_m3 > 0 else 0.0
+      for i in range(12)
+  ]
+  total_yr = sum(deliv_fams)
+  pct_yr_share = [
+      ((v / total_yr) * 100.0) if total_yr > 0 else 0.0 for v in deliv_fams
+  ]
+
+  df_monthly_summary = pd.DataFrame({
+      "Tháng": months_labels,
+      "Lệnh Hoàn Thành": m_comp_orders,
+      "Lệnh Chưa Xong": m_uncomp_orders,
+      "Tỷ Lệ HT Lệnh (%)": pct_orders_m,
+      "SL Hoàn Thành": [int(v) for v in m_comp_qty],
+      "SL Chưa Xong": [int(v) for v in m_uncomp_qty],
+      "Tỷ Lệ HT SL (%)": pct_qty_m,
+  })
+  df_plan_summary = pd.DataFrame({
+      "Chỉ Tiêu": [
+          "Tổng Kế Hoạch",
+          "Đã Giao Hoàn Thành",
+          "Còn Lại Chưa Xong",
+      ],
+      "Số Lượng": [
+          int(tot_qty_all),
+          int(deliv_qty_all),
+          int(rem_qty_kpi),
+      ],
+      "Tỷ Lệ Cơ Cấu (%)": [
+          100.0,
+          (deliv_qty_all / tot_qty_all * 100.0) if tot_qty_all > 0 else 0.0,
+          (rem_qty_kpi / tot_qty_all * 100.0) if tot_qty_all > 0 else 0.0,
+      ],
+  })
+  df_family_summary = pd.DataFrame({
+      "Tháng": months_labels,
+      f"SL Sản Xuất ({sel_fam})": [int(v) for v in m3_qty],
+      "Tỷ Lệ Đóng Góp Tháng (%)": pct_fam_contrib,
+  })
+  df_year_summary = pd.DataFrame({
+      "Mã / Dòng SP": fams_x,
+      "Tổng SL Hoàn Thành Cả Năm": [int(v) for v in deliv_fams],
+      "Tỷ Lệ Cơ Cấu (%)": pct_yr_share,
+  })
+
+  st.markdown(
+      "<hr style='margin: 8px 0 18px 0; border-color: #E4E8F0;'>",
+      unsafe_allow_html=True,
+  )
+  col_hdr, col_btn = st.columns([2.5, 1.2])
+  with col_hdr:
+    render_section_heading(
+        "📑 Bảng Số Liệu Tổng Hợp & Tỷ Lệ Hiệu Chỉnh —"
+        f" {title_clean.upper()}"
+    )
+  excel_bytes = generate_print_ready_excel(
+      phan_he_code,
+      title_clean,
+      tu_date,
+      den_date,
+      df_monthly_summary,
+      df_plan_summary,
+      df_family_summary,
+      df_year_summary,
+      fig1_mpl,
+      fig2_mpl,
+      fig3_mpl,
+      fig4_mpl,
+  )
+  with col_btn:
+    st.download_button(
+        label="📥 XUẤT BÁO CÁO EXCEL CHUYÊN NGHIỆP",
+        data=excel_bytes,
+        file_name=(
+            f"BaoCao_EMIC_{phan_he_code}_{datetime.now().strftime('%Y%m%d')}.xlsx"
+        ),
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        use_container_width=True,
+        type="primary",
+    )
+
+  t_col1, t_col2 = st.columns([1.6, 1.0])
+  with t_col1:
+    st.markdown("##### 1. Tiến Độ Sản Xuất Theo Tháng")
+    styled_monthly = (
+        df_monthly_summary.style.background_gradient(
+            subset=["Lệnh Hoàn Thành"], cmap="Blues"
+        )
+        .background_gradient(subset=["Lệnh Chưa Xong"], cmap="Reds")
+        .background_gradient(subset=["SL Hoàn Thành"], cmap="Greens")
+        .background_gradient(subset=["SL Chưa Xong"], cmap="Oranges")
+    )
+    st.dataframe(
+        styled_monthly,
+        column_config={
+            "Tỷ Lệ HT Lệnh (%)": st.column_config.ProgressColumn(
+                "Tỷ Lệ HT Lệnh", format="%.1f%%", min_value=0, max_value=100
+            ),
+            "Tỷ Lệ HT SL (%)": st.column_config.ProgressColumn(
+                "Tỷ Lệ HT SL", format="%.1f%%", min_value=0, max_value=100
+            ),
+            "SL Hoàn Thành": st.column_config.NumberColumn(
+                "SL Hoàn Thành", format="%d"
+            ),
+            "SL Chưa Xong": st.column_config.NumberColumn(
+                "SL Chưa Xong", format="%d"
+            ),
+        },
+        use_container_width=True,
+        hide_index=True,
+    )
+  with t_col2:
+    st.markdown("##### 2. Tổng Quan Chỉ Tiêu Kế Hoạch")
+    styled_plan = df_plan_summary.style.background_gradient(
+        subset=["Số Lượng"], cmap="Blues"
+    )
+    st.dataframe(
+        styled_plan,
+        column_config={
+            "Tỷ Lệ Cơ Cấu (%)": st.column_config.ProgressColumn(
+                "Tỷ Lệ Cơ Cấu", format="%.1f%%", min_value=0, max_value=100
+            ),
+            "Số Lượng": st.column_config.NumberColumn("Số Lượng", format="%d"),
+        },
+        use_container_width=True,
+        hide_index=True,
+    )
+
+  t_col3, t_col4 = st.columns([1.0, 1.0])
+  with t_col3:
+    st.markdown(f"##### 3. Chi Tiết Sản Lượng Dòng SP ({sel_fam})")
+    styled_family = df_family_summary.style.background_gradient(
+        subset=[f"SL Sản Xuất ({sel_fam})"], cmap="Purples"
+    )
+    st.dataframe(
+        styled_family,
+        column_config={
+            "Tỷ Lệ Đóng Góp Tháng (%)": st.column_config.ProgressColumn(
+                "Tỷ Lệ Đóng Góp Tháng", format="%.1f%%", min_value=0, max_value=100
+            ),
+            f"SL Sản Xuất ({sel_fam})": st.column_config.NumberColumn(
+                f"SL Sản Xuất ({sel_fam})", format="%d"
+            ),
+        },
+        use_container_width=True,
+        hide_index=True,
+    )
+  with t_col4:
+    st.markdown("##### 4. Tổng Sản Lượng Cả Năm Các Mã Đầu 5")
+    styled_year = df_year_summary.style.background_gradient(
+        subset=["Tổng SL Hoàn Thành Cả Năm"], cmap="BuGn"
+    )
+    st.dataframe(
+        styled_year,
+        column_config={
+            "Tỷ Lệ Cơ Cấu (%)": st.column_config.ProgressColumn(
+                "Tỷ Lệ Cơ Cấu", format="%.1f%%", min_value=0, max_value=100
+            ),
+            "Tổng SL Hoàn Thành Cả Năm": st.column_config.NumberColumn(
+                "Tổng SL Cả Năm", format="%d"
+            ),
+        },
+        use_container_width=True,
+        hide_index=True,
+    )
 
 
-# ================= 5. NAVIGATION TABS (5 TABS NGUYÊN BẢN GỐC) =================
-tab_vat_tu, tab_co_khi, tab_tuti, tab_cong_to, tab_danh_sach = st.tabs([
-    "📋 Báo Cáo Vật Tư",
-    "⚙️ Báo Cáo Cơ Khí",
-    "🔌 Báo Cáo TU/TI",
-    "⚡ Báo Cáo Công Tơ",
-    "🔍 Danh Sách Chi Tiết & Năng Suất",
-])
+# ================= 6. HIỂN THỊ DỮ LIỆU THEO LÁ CÂY ĐÃ CHỌN =================
 
-# ================= 6. TAB 1: BÁO CÁO VẬT TƯ =================
-with tab_vat_tu:
+if selected_sub_leaf == "📋 Báo Cáo Vật Tư (QA32)":
+  render_page_header(
+      "📋 Báo Cáo Chất Lượng Vật Tư Nhập Mua (QA32)",
+      "Tổng hợp tiến độ kiểm tra, tỷ lệ đạt/đặc nhượng và danh sách vật tư bị"
+      " block",
+      f"{tu_date.strftime('%d/%m/%Y')} → {den_date.strftime('%d/%m/%Y')}",
+  )
+
   if df_qa32.empty:
     st.info("💡 Chưa có dữ liệu QA32 trong khoảng thời gian đã chọn.")
   else:
@@ -785,7 +1508,6 @@ with tab_vat_tu:
             "value": f"{int(total_ft_all):,}",
             "icon": "📦",
             "color": COLOR_PRIMARY,
-            "color_soft": "#EEF0FF",
             "sub": f"{int(total_by_all):,} mẫu đã kiểm (BY)",
         },
         {
@@ -793,7 +1515,6 @@ with tab_vat_tu:
             "value": f"{pct_ud01:.1f}%",
             "icon": "✅",
             "color": COLOR_SUCCESS,
-            "color_soft": "#ECFDF5",
             "sub": f"{int(total_ud01):,} / {int(total_lots):,} lô",
         },
         {
@@ -801,7 +1522,6 @@ with tab_vat_tu:
             "value": f"{int(total_ud02 + total_ud03):,}",
             "icon": "⚠️",
             "color": COLOR_WARNING,
-            "color_soft": "#FFF8EB",
             "sub": f"UD02: {int(total_ud02):,} · UD03: {int(total_ud03):,}",
         },
         {
@@ -809,12 +1529,9 @@ with tab_vat_tu:
             "value": f"{int(total_ca_block):,}",
             "icon": "🚫",
             "color": COLOR_DANGER,
-            "color_soft": "#FEF2F3",
             "sub": f"{len(top_block_dict):,} mã vật tư liên quan",
         },
     ])
-
-    PLOT_HEIGHT = 380
 
     col1, col2 = st.columns([2.1, 1.0])
     with col1:
@@ -860,7 +1577,6 @@ with tab_vat_tu:
               line=dict(color=COLOR_PURPLE, width=2, dash="dash"),
               text=[f"{int(v):,}" if v > 0 else "" for v in total_by],
               textposition="top center",
-              textfont=dict(size=9.5, family=PLOTLY_FONT, color=COLOR_PURPLE),
           ),
           secondary_y=True,
       )
@@ -873,66 +1589,32 @@ with tab_vat_tu:
               line=dict(color=COLOR_PRIMARY, width=2),
               text=[f"{int(v):,}" if v > 0 else "" for v in ft_qty_m],
               textposition="bottom center",
-              textfont=dict(size=9.5, family=PLOTLY_FONT, color=COLOR_PRIMARY),
           ),
           secondary_y=True,
       )
-
-      total_lots_m = [ud01_m[i] + ud02_m[i] + ud03_m[i] for i in range(12)]
-      for i in range(12):
-        if total_lots_m[i] > 0:
-          fig1.add_annotation(
-              x=months_labels[i],
-              y=total_lots_m[i],
-              text=f"<b>{int(total_lots_m[i]):,}</b>",
-              showarrow=False,
-              yshift=12,
-              font=dict(size=10.5, family=PLOTLY_FONT, color=COLOR_TEXT),
-              yref="y1",
-          )
 
       fig1.update_layout(
           barmode="stack",
           margin=dict(l=30, r=20, t=8, b=55),
-          height=PLOT_HEIGHT,
+          height=380,
           paper_bgcolor="#FFFFFF",
           plot_bgcolor="#FFFFFF",
-          legend=dict(
-              orientation="h",
-              yanchor="top",
-              y=-0.22,
-              xanchor="center",
-              x=0.5,
-              font=dict(size=11, family=PLOTLY_FONT, color="#6B7280"),
-          ),
-      )
-      fig1.update_xaxes(
-          showgrid=False, tickfont=dict(size=11, family=PLOTLY_FONT, color="#6B7280")
       )
       fig1.update_yaxes(
-          title_text="← Số Lượng Lệnh",
-          title_font=dict(size=12, color=COLOR_PRIMARY),
-          tickformat=",d",
-          secondary_y=False,
-          showgrid=True,
-          gridcolor=PLOTLY_GRID,
-          zeroline=False,
+          title_text="← Số Lượng Lệnh", secondary_y=False, showgrid=True
       )
       fig1.update_yaxes(
           title_text="Vật Tư / Mẫu (Log) →",
-          title_font=dict(size=12, color=COLOR_PURPLE),
           type="log",
           dtick=1,
-          tickformat="~s",
           secondary_y=True,
           showgrid=False,
       )
-
       st.plotly_chart(
           fig1,
           use_container_width=True,
           config={"displayModeBar": False},
-          key="vt_chart_fig1",
+          key="leaf_vt_fig1",
       )
       chart_card_close()
 
@@ -960,41 +1642,22 @@ with tab_vat_tu:
                   ],
                   textinfo="text",
                   textposition="outside",
-                  textfont=dict(
-                      size=12,
-                      family=PLOTLY_FONT,
-                      color=[COLOR_SUCCESS, COLOR_DANGER],
-                  ),
                   direction="clockwise",
                   sort=False,
               )
           ]
       )
       fig2.update_layout(
-          margin=dict(l=95, r=95, t=30, b=30),
-          height=PLOT_HEIGHT,
+          margin=dict(l=90, r=90, t=30, b=30),
+          height=380,
           paper_bgcolor="#FFFFFF",
           showlegend=False,
-          annotations=[
-              dict(
-                  text=(
-                      "<b>TỔNG VẬT TƯ"
-                      " VỀ</b><br><span"
-                      f" style='font-size:16px'>{int(total_ft_all):,}</span>"
-                  ),
-                  x=0.5,
-                  y=0.5,
-                  font_size=12,
-                  font_family=PLOTLY_FONT,
-                  showarrow=False,
-              )
-          ],
       )
       st.plotly_chart(
           fig2,
           use_container_width=True,
           config={"displayModeBar": False},
-          key="vt_chart_fig2",
+          key="leaf_vt_fig2",
       )
       chart_card_close()
 
@@ -1005,7 +1668,6 @@ with tab_vat_tu:
     )
     if sorted_blocks:
       col_rank, col_table = st.columns([1.0, 1.6])
-
       supplier_agg = {}
       for item in sorted_blocks:
         ncc_name = item["ncc"].strip() if item["ncc"] else "Không rõ NCC"
@@ -1020,20 +1682,15 @@ with tab_vat_tu:
         if top_suppliers:
           sup_names = [clean_emoji(s[0])[:28] for s in top_suppliers][::-1]
           sup_vals = [s[1] for s in top_suppliers][::-1]
-          chart_card_open(
-              "Top Nhà Cung Cấp Bị Block Nhiều Nhất", "Theo tổng SL (CA)"
-          )
+          chart_card_open("Top Nhà Cung Cấp Bị Block Nhiều Nhất")
           fig_sup = go.Figure(
               go.Bar(
                   x=sup_vals,
                   y=sup_names,
                   orientation="h",
-                  marker=dict(color=COLOR_DANGER, cornerradius=6),
+                  marker=dict(color=COLOR_DANGER),
                   text=[f"{v:,.0f}" for v in sup_vals],
                   textposition="outside",
-                  textfont=dict(
-                      size=11, family=PLOTLY_FONT, color=COLOR_DANGER
-                  ),
               )
           )
           fig_sup.update_layout(
@@ -1043,23 +1700,11 @@ with tab_vat_tu:
               plot_bgcolor="#FFFFFF",
               showlegend=False,
           )
-          fig_sup.update_xaxes(
-              showgrid=True,
-              gridcolor=PLOTLY_GRID,
-              tickfont=dict(
-                  size=10.5, family=PLOTLY_FONT, color=PLOTLY_AXIS_TEXT
-              ),
-          )
-          fig_sup.update_yaxes(
-              showgrid=False,
-              automargin=True,
-              tickfont=dict(size=11, family=PLOTLY_FONT, color=COLOR_TEXT),
-          )
           st.plotly_chart(
               fig_sup,
               use_container_width=True,
               config={"displayModeBar": False},
-              key="vt_chart_fig_sup",
+              key="leaf_vt_fig_sup",
           )
           chart_card_close()
 
@@ -1088,1437 +1733,314 @@ with tab_vat_tu:
             "Số Lượt UD 03",
             "Tổng SL Block (CA) / SL Về",
         ]
-        styled_block = (
-            df_block.style.background_gradient(
-                subset=["Số Lượt UD 02"], cmap="Oranges", vmin=0
-            )
-            .background_gradient(
-                subset=["Số Lượt UD 03"], cmap="Reds", vmin=0
-            )
-            .format({"Số Lượt UD 02": "{:.0f}", "Số Lượt UD 03": "{:.0f}"})
-        )
-        st.dataframe(
-            styled_block, use_container_width=True, hide_index=True, height=360
-        )
+        st.dataframe(df_block, use_container_width=True, hide_index=True)
         chart_card_close()
-    else:
-      st.success("🎉 Không có vật tư nào bị Block hoặc UD 02, 03")
 
-
-# ================= 7. HÀM COOIS CÓ ĐỦ BIỂU ĐỒ VÀ XUẤT EXCEL (ĐÃ CÓ KEY DUY NHẤT) =================
-def render_coois_tab_layout(phan_he_code, title_text):
-  df_sub = (
-      df_coois[df_coois["phan_he"] == phan_he_code]
-      if not df_coois.empty
-      else pd.DataFrame()
-  )
-  if df_sub.empty:
-    st.info(f"💡 Chưa có dữ liệu sản xuất cho phân hệ {title_text}.")
-    return
-
-  months_labels = [f"T{i}" for i in range(1, 13)]
-  m_comp_qty, m_uncomp_qty = [0.0] * 12, [0.0] * 12
-  m_tot_orders, m_uncomp_orders = [0] * 12, [0] * 12
-  tot_qty_all, deliv_qty_all = 0.0, 0.0
-
-  for _, r in df_sub.iterrows():
-    try:
-      m_idx = (
-          datetime.strptime(
-              str(r["ngay_lenh_dt"]).split()[0], "%Y-%m-%d"
-          ).month
-          - 1
-      )
-    except Exception:
-      m_idx = 0
-    if not (0 <= m_idx < 12):
-      m_idx = 0
-    sl_t, sl_h = float(r["sl_tong"]), float(r["sl_ht"])
-    uncomp_q = max(0.0, sl_t - sl_h)
-    tot_qty_all += sl_t
-    deliv_qty_all += sl_h
-    m_comp_qty[m_idx] += sl_h
-    m_uncomp_qty[m_idx] += uncomp_q
-    m_tot_orders[m_idx] += 1
-    if sl_h < sl_t:
-      m_uncomp_orders[m_idx] += 1
-
-  m_comp_orders = [m_tot_orders[i] - m_uncomp_orders[i] for i in range(12)]
-  title_clean = clean_emoji(title_text)
-
-  rem_qty_kpi = max(0.0, tot_qty_all - deliv_qty_all)
-  pct_deliv_kpi = (
-      (deliv_qty_all / tot_qty_all * 100) if tot_qty_all > 0 else 0.0
-  )
-  total_orders_kpi = sum(m_tot_orders)
-  total_uncomp_orders_kpi = sum(m_uncomp_orders)
-  pct_orders_kpi = (
-      (total_orders_kpi - total_uncomp_orders_kpi) / total_orders_kpi * 100
-  ) if total_orders_kpi > 0 else 0.0
-
-  render_kpi_cards([
-      {
-          "label": "Tổng Kế Hoạch",
-          "value": f"{int(tot_qty_all):,}",
-          "icon": "🎯",
-          "color": COLOR_PRIMARY,
-          "color_soft": "#EEF0FF",
-          "sub": f"{int(total_orders_kpi):,} lệnh sản xuất",
-      },
-      {
-          "label": "Đã Hoàn Thành",
-          "value": f"{int(deliv_qty_all):,}",
-          "icon": "✅",
-          "color": COLOR_SUCCESS,
-          "color_soft": "#ECFDF5",
-          "sub": f"Tỷ lệ SL: {pct_deliv_kpi:.1f}%",
-      },
-      {
-          "label": "Còn Lại Chưa Xong",
-          "value": f"{int(rem_qty_kpi):,}",
-          "icon": "⏳",
-          "color": COLOR_WARNING,
-          "color_soft": "#FFF8EB",
-          "sub": f"{int(total_uncomp_orders_kpi):,} lệnh chưa xong",
-      },
-      {
-          "label": "Tỷ Lệ Lệnh Hoàn Thành",
-          "value": f"{pct_orders_kpi:.1f}%",
-          "icon": "📈",
-          "color": COLOR_DANGER if pct_orders_kpi < 80 else COLOR_SUCCESS,
-          "color_soft": "#FEF2F3" if pct_orders_kpi < 80 else "#ECFDF5",
-          "sub": f"Trên tổng {int(total_orders_kpi):,} lệnh",
-      },
-  ])
-
-  PLOT_HEIGHT = 380
-
-  col1, col2 = st.columns([2.1, 1.0])
-
-  with col1:
-    chart_card_open(
-        f"Sản Lượng & Tỷ Lệ Hoàn Thành — {title_clean}", "Theo tháng"
-    )
-    fig1 = make_subplots(specs=[[{"secondary_y": True}]])
-
-    fig1.add_trace(
-        go.Bar(
-            x=months_labels,
-            y=m_comp_qty,
-            name="SL Hoàn Thành",
-            marker_color=COLOR_SUCCESS,
-            text=[f"{int(v):,}" if v > 0 else "" for v in m_comp_qty],
-            textposition="inside",
-            textfont=dict(size=9.5, family=PLOTLY_FONT, color="#FFFFFF"),
-        ),
-        secondary_y=False,
-    )
-    fig1.add_trace(
-        go.Bar(
-            x=months_labels,
-            y=m_uncomp_qty,
-            name="SL Chưa Xong",
-            marker_color=COLOR_WARNING,
-            base=m_comp_qty,
-            text=[f"{int(v):,}" if v > 0 else "" for v in m_uncomp_qty],
-            textposition="inside",
-            textfont=dict(size=9.5, family=PLOTLY_FONT, color="#FFFFFF"),
-        ),
-        secondary_y=False,
-    )
-    pct_hoanthanh_m = [
-        (m_comp_qty[i] / (m_comp_qty[i] + m_uncomp_qty[i]) * 100.0)
-        if (m_comp_qty[i] + m_uncomp_qty[i]) > 0
-        else None
-        for i in range(12)
-    ]
-    fig1.add_trace(
-        go.Scatter(
-            x=months_labels,
-            y=pct_hoanthanh_m,
-            name="% Hoàn Thành",
-            mode="lines+markers+text",
-            line=dict(color=COLOR_PRIMARY, width=2.5),
-            marker=dict(size=6, color=COLOR_PRIMARY),
-            text=[f"{v:.0f}%" if v is not None else "" for v in pct_hoanthanh_m],
-            textposition="top center",
-            textfont=dict(size=10, family=PLOTLY_FONT, color=COLOR_PRIMARY),
-            connectgaps=False,
-        ),
-        secondary_y=True,
-    )
-
-    fig1.update_layout(
-        barmode="stack",
-        bargap=0.35,
-        margin=dict(l=30, r=20, t=8, b=55),
-        height=PLOT_HEIGHT,
-        paper_bgcolor="#FFFFFF",
-        plot_bgcolor="#FFFFFF",
-        legend=dict(
-            orientation="h",
-            yanchor="top",
-            y=-0.22,
-            xanchor="center",
-            x=0.5,
-            font=dict(size=11, family=PLOTLY_FONT, color="#6B7280"),
-        ),
-    )
-    fig1.update_xaxes(
-        showgrid=False, tickfont=dict(size=11, family=PLOTLY_FONT, color="#6B7280")
-    )
-    fig1.update_yaxes(
-        title_text="← Sản Lượng",
-        title_font=dict(size=12, color=COLOR_SUCCESS),
-        tickformat="~s",
-        tickfont=dict(size=11, family=PLOTLY_FONT, color=PLOTLY_AXIS_TEXT),
-        secondary_y=False,
-        showgrid=True,
-        gridcolor=PLOTLY_GRID,
-        zeroline=False,
-    )
-    fig1.update_yaxes(
-        title_text="% Hoàn Thành →",
-        title_font=dict(size=12, color=COLOR_PRIMARY),
-        tickformat=".0f",
-        ticksuffix="%",
-        range=[0, 105],
-        tickfont=dict(size=11, family=PLOTLY_FONT, color=PLOTLY_AXIS_TEXT),
-        secondary_y=True,
-        showgrid=False,
-    )
-
-    st.plotly_chart(
-        fig1,
-        use_container_width=True,
-        config={"displayModeBar": False},
-        key=f"coois_fig1_{phan_he_code}",
-    )
-    chart_card_close()
-
-  with col2:
-    chart_card_open("Tỷ Lệ Hoàn Thành Tổng Quan")
-    rem_qty_all = max(0.0, tot_qty_all - deliv_qty_all)
-    pct_deliv = (deliv_qty_all / tot_qty_all * 100) if tot_qty_all > 0 else 0
-    pct_rem = 100.0 - pct_deliv if tot_qty_all > 0 else 0.0
-
-    text_labels = [
-        f"<b>Hoàn thành</b><br>{pct_deliv:.1f}%<br>({int(deliv_qty_all):,})",
-        f"<b>Chưa xong</b><br>{pct_rem:.1f}%<br>({int(rem_qty_all):,})",
-    ]
-    fig2 = go.Figure(
-        data=[
-            go.Pie(
-                labels=["Hoàn thành", "Chưa xong"],
-                values=[deliv_qty_all, rem_qty_all],
-                hole=0.6,
-                marker=dict(
-                    colors=[COLOR_SUCCESS, COLOR_WARNING],
-                    line=dict(color="#FFFFFF", width=3),
-                ),
-                text=text_labels,
-                textinfo="text",
-                textposition="outside",
-                textfont=dict(
-                    size=12,
-                    family=PLOTLY_FONT,
-                    color=[COLOR_SUCCESS, COLOR_WARNING],
-                ),
-                direction="clockwise",
-                sort=False,
-            )
-        ]
-    )
-    fig2.update_layout(
-        margin=dict(l=95, r=95, t=30, b=30),
-        height=PLOT_HEIGHT,
-        paper_bgcolor="#FFFFFF",
-        showlegend=False,
-        annotations=[
-            dict(
-                text=(
-                    "<b>TỔNG KẾ HOẠCH</b><br><span"
-                    f" style='font-size:16px'>{int(tot_qty_all):,}</span>"
-                ),
-                x=0.5,
-                y=0.5,
-                font_size=12,
-                font_family=PLOTLY_FONT,
-                showarrow=False,
-            )
-        ],
-    )
-    st.plotly_chart(
-        fig2,
-        use_container_width=True,
-        config={"displayModeBar": False},
-        key=f"coois_fig2_{phan_he_code}",
-    )
-    chart_card_close()
-
-  # HÀNG 2: BỘ LỌC DÒNG SP
-  sub_5 = (
-      df_sub[
-          df_sub["ma_tp"]
-          .astype(str)
-          .str.split(".")
-          .str[0]
-          .str.lstrip("0")
-          .str.startswith("5")
-      ].copy()
-      if not df_sub.empty
-      else pd.DataFrame()
-  )
-  raw_fams = (
-      [
-          str(x).strip()
-          for x in sub_5["mat_prefix"].unique()
-          if pd.notna(x)
-          and str(x).strip()
-          and str(x).strip().lower() not in ["none", "nan"]
-      ]
-      if not sub_5.empty
-      else []
-  )
-  available_fams = ["Tất cả dòng sản phẩm"] + sorted(list(set(raw_fams)))
-  sel_fam = st.selectbox(
-      "🎯 Chọn Dòng SP (Đầu 5):", available_fams, key=f"cb_{phan_he_code}"
-  )
-
-  col3, col4 = st.columns([1, 1])
-
-  with col3:
-    chart_card_open(f"Sản Lượng — Dòng: {clean_emoji(sel_fam)}")
-    m3_qty = [0.0] * 12
-    if not sub_5.empty:
-      sub_5_df = sub_5.copy()
-      sub_5_df["month"] = pd.to_datetime(
-          sub_5_df["ngay_lenh_dt"], errors="coerce"
-      ).dt.month
-      sub_filtered = (
-          sub_5_df[sub_5_df["mat_prefix"] == sel_fam]
-          if sel_fam != "Tất cả dòng sản phẩm"
-          else sub_5_df
-      )
-      for _, r in sub_filtered.iterrows():
-        m_val = r["month"]
-        if pd.notna(m_val) and 1 <= int(m_val) <= 12:
-          m3_qty[int(m_val) - 1] += float(r["sl_ht"])
-
-    fig3 = go.Figure()
-    fig3.add_trace(
-        go.Bar(
-            x=months_labels,
-            y=m3_qty,
-            name="SL Sản Xuất",
-            marker=dict(color=COLOR_PRIMARY, cornerradius=6),
-            text=[f"{int(v):,}" if v > 0 else "" for v in m3_qty],
-            textposition="outside",
-            textfont=dict(color=COLOR_PRIMARY, size=11, family=PLOTLY_FONT),
-        )
-    )
-
-    fig3.update_layout(
-        margin=dict(l=30, r=20, t=8, b=36),
-        height=PLOT_HEIGHT - 40,
-        paper_bgcolor="#FFFFFF",
-        plot_bgcolor="#FFFFFF",
-        showlegend=False,
-        bargap=0.3,
-    )
-    fig3.update_xaxes(
-        showgrid=False, tickfont=dict(size=11, family=PLOTLY_FONT, color="#6B7280")
-    )
-    fig3.update_yaxes(
-        title_text="SL Hoàn Thành",
-        title_font=dict(size=12, color=COLOR_PRIMARY),
-        tickformat="~s",
-        tickfont=dict(size=11, family=PLOTLY_FONT, color=PLOTLY_AXIS_TEXT),
-        showgrid=True,
-        gridcolor=PLOTLY_GRID,
-        zeroline=False,
-        rangemode="tozero",
-    )
-
-    st.plotly_chart(
-        fig3,
-        use_container_width=True,
-        config={"displayModeBar": False},
-        key=f"coois_fig3_{phan_he_code}",
-    )
-    chart_card_close()
-
-  with col4:
-    chart_card_open("Tổng Sản Lượng Cả Năm Các Mã Đầu 5")
-    if not sub_5.empty:
-      summary_fams = (
-          sub_5.groupby("mat_prefix")[["sl_ht"]].sum().reset_index()
-      )
-      fams_x = [
-          str(val)
-          for val in summary_fams["mat_prefix"].tolist()
-          if pd.notna(val)
-          and str(val).strip()
-          and str(val).strip().lower() not in ["none", "nan"]
-      ]
-      if not fams_x:
-        fams_x, deliv_fams = ["Trống"], [0.0]
-      else:
-        summary_fams = summary_fams[summary_fams["mat_prefix"].isin(fams_x)]
-        fams_x, deliv_fams = (
-            summary_fams["mat_prefix"].tolist(),
-            summary_fams["sl_ht"].values,
-        )
-    else:
-      fams_x, deliv_fams = ["Không có SP"], [0.0]
-
-    if len(fams_x) > 1:
-      pairs = sorted(zip(fams_x, deliv_fams), key=lambda p: p[1], reverse=True)
-      fams_x = [p[0] for p in pairs]
-      deliv_fams = [p[1] for p in pairs]
-
-    bar_colors = [
-        DISTINCT_COLORS[i % len(DISTINCT_COLORS)] for i in range(len(fams_x))
-    ]
-
-    fig4 = go.Figure()
-    fig4.add_trace(
-        go.Bar(
-            x=fams_x,
-            y=deliv_fams,
-            marker=dict(color=bar_colors, cornerradius=6),
-            text=[f"{int(v):,}" if v > 0 else "" for v in deliv_fams],
-            textposition="outside",
-            textfont=dict(color=bar_colors, size=11, family=PLOTLY_FONT),
-        )
-    )
-
-    fig4.update_layout(
-        margin=dict(l=30, r=20, t=8, b=36),
-        height=PLOT_HEIGHT - 40,
-        paper_bgcolor="#FFFFFF",
-        plot_bgcolor="#FFFFFF",
-        showlegend=False,
-        bargap=0.3,
-    )
-    fig4.update_xaxes(
-        showgrid=False, tickfont=dict(size=11, family=PLOTLY_FONT, color="#6B7280")
-    )
-    fig4.update_yaxes(
-        title_text="Số Lượng SP (Log)",
-        title_font=dict(size=12, color=COLOR_SUCCESS),
-        type="log",
-        dtick=1,
-        tickformat="~s",
-        tickfont=dict(size=11, family=PLOTLY_FONT, color=PLOTLY_AXIS_TEXT),
-        showgrid=True,
-        gridcolor=PLOTLY_GRID,
-        zeroline=False,
-    )
-
-    st.plotly_chart(
-        fig4,
-        use_container_width=True,
-        config={"displayModeBar": False},
-        key=f"coois_fig4_{phan_he_code}",
-    )
-    chart_card_close()
-
-  # ================= XUẤT ẢNH MATPLOTLIB ẨN CHO EXCEL =================
-  fig1_mpl, ax_m1 = plt.subplots(figsize=(8, 3.2), dpi=200)
-  ax_m1_twin = ax_m1.twinx()
-  ax_m1.bar(
-      np.arange(12) - 0.18,
-      m_comp_orders,
-      width=0.35,
-      color=COLOR_PRIMARY,
-      label="Lệnh HT",
-  )
-  ax_m1.bar(
-      np.arange(12) - 0.18,
-      m_uncomp_orders,
-      width=0.35,
-      bottom=m_comp_orders,
-      color=COLOR_DANGER,
-      label="Lệnh Chưa Xong",
-  )
-  ax_m1_twin.bar(
-      np.arange(12) + 0.18,
-      m_comp_qty,
-      width=0.35,
-      color=COLOR_SUCCESS,
-      label="SL HT",
-  )
-  ax_m1_twin.bar(
-      np.arange(12) + 0.18,
-      m_uncomp_qty,
-      width=0.35,
-      bottom=m_comp_qty,
-      color=COLOR_WARNING,
-      label="SL Chưa Xong",
-  )
-  ax_m1.set_title(f"TIẾN ĐỘ SẢN XUẤT - {title_clean}", fontweight="bold")
-  ax_m1.set_xticks(np.arange(12))
-  ax_m1.set_xticklabels(months_labels)
-  ax_m1_twin.set_yscale("symlog", linthresh=100)
-  plt.close(fig1_mpl)
-
-  fig2_mpl, ax_m2 = plt.subplots(figsize=(4, 3.2), dpi=200)
-  ax_m2.set_aspect("equal")
-  if tot_qty_all > 0:
-    ax_m2.pie(
-        [deliv_qty_all, rem_qty_all],
-        labels=["Hoàn thành", "Chưa xong"],
-        colors=[COLOR_SUCCESS, COLOR_WARNING],
-        autopct="%1.1f%%",
-        startangle=140,
-        wedgeprops=dict(width=0.35, edgecolor="white"),
-    )
-  ax_m2.set_title("TỶ LỆ HOÀN THÀNH TỔNG QUAN", fontweight="bold")
-  plt.close(fig2_mpl)
-
-  fig3_mpl, ax_m3 = plt.subplots(figsize=(6, 3.0), dpi=200)
-  ax_m3.bar(np.arange(12), m3_qty, width=0.45, color=COLOR_PRIMARY)
-  ax_m3.set_xticks(np.arange(12))
-  ax_m3.set_xticklabels(months_labels)
-  ax_m3.set_yscale("symlog", linthresh=100)
-  ax_m3.set_title(f"SẢN LƯỢNG - DÒNG: {clean_emoji(sel_fam)}", fontweight="bold")
-  plt.close(fig3_mpl)
-
-  fig4_mpl, ax_m4 = plt.subplots(figsize=(6, 3.0), dpi=200)
-  ax_m4.bar(np.arange(len(fams_x)), deliv_fams, width=0.45, color=bar_colors)
-  ax_m4.set_xticks(np.arange(len(fams_x)))
-  ax_m4.set_xticklabels(fams_x)
-  ax_m4.set_yscale("symlog", linthresh=100)
-  ax_m4.set_title("TỔNG SẢN LƯỢNG CẢ NĂM CÁC MÃ ĐẦU 5", fontweight="bold")
-  plt.close(fig4_mpl)
-
-  # ================= BẢNG SỐ LIỆU TỔNG HỢP & NÚT EXCEL =================
-  pct_orders_m = [
-      ((m_comp_orders[i] / m_tot_orders[i]) * 100.0)
-      if m_tot_orders[i] > 0
-      else 0.0
-      for i in range(12)
-  ]
-  pct_qty_m = [
-      ((m_comp_qty[i] / (m_comp_qty[i] + m_uncomp_qty[i])) * 100.0)
-      if (m_comp_qty[i] + m_uncomp_qty[i]) > 0
-      else 0.0
-      for i in range(12)
-  ]
-  total_m3 = sum(m3_qty)
-  pct_fam_contrib = [
-      ((m3_qty[i] / total_m3) * 100.0) if total_m3 > 0 else 0.0
-      for i in range(12)
-  ]
-  total_yr = sum(deliv_fams)
-  pct_yr_share = [
-      ((v / total_yr) * 100.0) if total_yr > 0 else 0.0 for v in deliv_fams
-  ]
-
-  df_monthly_summary = pd.DataFrame({
-      "Tháng": months_labels,
-      "Lệnh Hoàn Thành": m_comp_orders,
-      "Lệnh Chưa Xong": m_uncomp_orders,
-      "Tỷ Lệ HT Lệnh (%)": pct_orders_m,
-      "SL Hoàn Thành": [int(v) for v in m_comp_qty],
-      "SL Chưa Xong": [int(v) for v in m_uncomp_qty],
-      "Tỷ Lệ HT SL (%)": pct_qty_m,
-  })
-  df_plan_summary = pd.DataFrame({
-      "Chỉ Tiêu": [
-          "Tổng Kế Hoạch",
-          "Đã Giao Hoàn Thành",
-          "Còn Lại Chưa Xong",
-      ],
-      "Số Lượng": [
-          int(tot_qty_all),
-          int(deliv_qty_all),
-          int(rem_qty_all),
-      ],
-      "Tỷ Lệ Cơ Cấu (%)": [
-          100.0,
-          (deliv_qty_all / tot_qty_all * 100.0) if tot_qty_all > 0 else 0.0,
-          (rem_qty_all / tot_qty_all * 100.0) if tot_qty_all > 0 else 0.0,
-      ],
-  })
-  df_family_summary = pd.DataFrame({
-      "Tháng": months_labels,
-      f"SL Sản Xuất ({sel_fam})": [int(v) for v in m3_qty],
-      "Tỷ Lệ Đóng Góp Tháng (%)": pct_fam_contrib,
-  })
-  df_year_summary = pd.DataFrame({
-      "Mã / Dòng SP": fams_x,
-      "Tổng SL Hoàn Thành Cả Năm": [int(v) for v in deliv_fams],
-      "Tỷ Lệ Cơ Cấu (%)": pct_yr_share,
-  })
-
-  st.markdown(
-      "<hr style='margin: 8px 0 18px 0; border-color: #E4E8F0;'>",
-      unsafe_allow_html=True,
-  )
-  col_hdr, col_btn = st.columns([2.5, 1.2])
-  with col_hdr:
-    render_section_heading(
-        "📑 Bảng Số Liệu Tổng Hợp & Tỷ Lệ Hiệu Chỉnh —"
-        f" {title_clean.upper()}"
-    )
-  excel_bytes = generate_print_ready_excel(
-      phan_he_code,
-      title_clean,
-      tu_date,
-      den_date,
-      df_monthly_summary,
-      df_plan_summary,
-      df_family_summary,
-      df_year_summary,
-      fig1_mpl,
-      fig2_mpl,
-      fig3_mpl,
-      fig4_mpl,
-  )
-  with col_btn:
-    st.download_button(
-        label="📥 XUẤT BÁO CÁO EXCEL CHUYÊN NGHIỆP",
-        data=excel_bytes,
-        file_name=(
-            f"BaoCao_EMIC_{phan_he_code}_{datetime.now().strftime('%Y%m%d')}.xlsx"
-        ),
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        use_container_width=True,
-        type="primary",
-    )
-
-  t_col1, t_col2 = st.columns([1.6, 1.0])
-  with t_col1:
-    st.markdown("##### 1. Tiến Độ Sản Xuất Theo Tháng")
-    styled_monthly = (
-        df_monthly_summary.style.background_gradient(
-            subset=["Lệnh Hoàn Thành"], cmap="Blues"
-        )
-        .background_gradient(subset=["Lệnh Chưa Xong"], cmap="Reds")
-        .background_gradient(subset=["SL Hoàn Thành"], cmap="Greens")
-        .background_gradient(subset=["SL Chưa Xong"], cmap="Oranges")
-    )
-    st.dataframe(
-        styled_monthly,
-        column_config={
-            "Tỷ Lệ HT Lệnh (%)": st.column_config.ProgressColumn(
-                "Tỷ Lệ HT Lệnh", format="%.1f%%", min_value=0, max_value=100
-            ),
-            "Tỷ Lệ HT SL (%)": st.column_config.ProgressColumn(
-                "Tỷ Lệ HT SL", format="%.1f%%", min_value=0, max_value=100
-            ),
-            "SL Hoàn Thành": st.column_config.NumberColumn(
-                "SL Hoàn Thành", format="%d"
-            ),
-            "SL Chưa Xong": st.column_config.NumberColumn(
-                "SL Chưa Xong", format="%d"
-            ),
-        },
-        use_container_width=True,
-        hide_index=True,
-    )
-  with t_col2:
-    st.markdown("##### 2. Tổng Quan Chỉ Tiêu Kế Hoạch")
-    styled_plan = df_plan_summary.style.background_gradient(
-        subset=["Số Lượng"], cmap="Blues"
-    )
-    st.dataframe(
-        styled_plan,
-        column_config={
-            "Tỷ Lệ Cơ Cấu (%)": st.column_config.ProgressColumn(
-                "Tỷ Lệ Cơ Cấu", format="%.1f%%", min_value=0, max_value=100
-            ),
-            "Số Lượng": st.column_config.NumberColumn("Số Lượng", format="%d"),
-        },
-        use_container_width=True,
-        hide_index=True,
-    )
-
-  t_col3, t_col4 = st.columns([1.0, 1.0])
-  with t_col3:
-    st.markdown(f"##### 3. Chi Tiết Sản Lượng Dòng SP ({sel_fam})")
-    styled_family = df_family_summary.style.background_gradient(
-        subset=[f"SL Sản Xuất ({sel_fam})"], cmap="Purples"
-    )
-    st.dataframe(
-        styled_family,
-        column_config={
-            "Tỷ Lệ Đóng Góp Tháng (%)": st.column_config.ProgressColumn(
-                "Tỷ Lệ Đóng Góp Tháng", format="%.1f%%", min_value=0, max_value=100
-            ),
-            f"SL Sản Xuất ({sel_fam})": st.column_config.NumberColumn(
-                f"SL Sản Xuất ({sel_fam})", format="%d"
-            ),
-        },
-        use_container_width=True,
-        hide_index=True,
-    )
-  with t_col4:
-    st.markdown("##### 4. Tổng Sản Lượng Cả Năm Các Mã Đầu 5")
-    styled_year = df_year_summary.style.background_gradient(
-        subset=["Tổng SL Hoàn Thành Cả Năm"], cmap="BuGn"
-    )
-    st.dataframe(
-        styled_year,
-        column_config={
-            "Tỷ Lệ Cơ Cấu (%)": st.column_config.ProgressColumn(
-                "Tỷ Lệ Cơ Cấu", format="%.1f%%", min_value=0, max_value=100
-            ),
-            "Tổng SL Hoàn Thành Cả Năm": st.column_config.NumberColumn(
-                "Tổng SL Cả Năm", format="%d"
-            ),
-        },
-        use_container_width=True,
-        hide_index=True,
-    )
-
-
-# ================= 8. RENDER CÁC TAB COOIS MÀN HÌNH =================
-with tab_co_khi:
+elif selected_sub_leaf == "⚙️ Báo Cáo Cơ Khí (3012)":
   render_coois_tab_layout("CO_KHI", "⚙️ BÁO CÁO CƠ KHÍ (LỆNH 3012)")
-with tab_tuti:
+
+elif selected_sub_leaf == "🔌 Báo Cáo TU/TI (3011)":
   render_coois_tab_layout("TU_TI", "🔌 BÁO CÁO TUTI (LỆNH 3011)")
-with tab_cong_to:
+
+elif selected_sub_leaf == "⚡ Báo Cáo Công Tơ (3013, 3016)":
   render_coois_tab_layout("CONG_TO", "⚡ BÁO CÁO CÔNG TƠ (LỆNH 3013, 3016)")
 
+elif selected_sub_leaf == "📦 Chi Tiết Vật Tư (QA32)":
+  render_page_header(
+      "📦 Danh Sách Chi Tiết Vật Tư QA32",
+      "Tra cứu chi tiết tình trạng lô hàng vật tư nhập mua từ SAP QA32",
+      f"{tu_date.strftime('%d/%m/%Y')} → {den_date.strftime('%d/%m/%Y')}",
+  )
+  if not df_qa32.empty:
+    st.dataframe(df_qa32, use_container_width=True, hide_index=True)
+  else:
+    st.info("💡 Chưa có dữ liệu vật tư.")
 
-# ================= 9. TAB 5: DANH SÁCH CHI TIẾT, NĂNG SUẤT & QUẢN LÝ CÔNG VIỆC CON =================
-with tab_danh_sach:
-  render_section_heading(
-      "🔍 QUẢN LÝ DANH SÁCH CHI TIẾT VẬT TƯ, LỆNH SẢN XUẤT, NĂNG SUẤT & CÔNG"
-      " VIỆC"
+elif selected_sub_leaf == "⚙️ Chi Tiết Lệnh SX (COOIS)":
+  render_page_header(
+      "⚙️ Danh Sách Chi Tiết Lệnh Sản Xuất COOIS",
+      "Tra cứu chi tiết tình trạng hoàn thành các lệnh sản xuất từ SAP COOIS",
+      f"{tu_date.strftime('%d/%m/%Y')} → {den_date.strftime('%d/%m/%Y')}",
+  )
+  if not df_coois.empty:
+    st.dataframe(df_coois, use_container_width=True, hide_index=True)
+  else:
+    st.info("💡 Chưa có dữ liệu lệnh sản xuất.")
+
+elif selected_sub_leaf == "👨‍💼 Báo Cáo Năng Suất Cá Nhân QC":
+  render_page_header(
+      "👨‍💼 Báo Cáo Năng Suất Làm Việc Cá Nhân QC",
+      "Theo dõi tổng lượt kiểm, sản lượng đạt/lỗi và nhật ký kiểm tra theo"
+      " từng nhân sự",
+      f"{tu_date.strftime('%d/%m/%Y')} → {den_date.strftime('%d/%m/%Y')}",
+  )
+  try:
+    conn = get_db_connection()
+    df_qc_logs = pd.read_sql_query(
+        "SELECT id, loai_qc, so_lot, ma_vt, ten_vt, ncc, sl_kiem, sl_khong_dat,"
+        " sl_dat, ket_luan, nguoi_kiem, ngay_kiem, ghi_chu, kieu_loi,"
+        " cong_viec_con FROM tb_qc_dau_vao ORDER BY ngay_kiem DESC",
+        conn,
+    )
+    conn.close()
+
+    if not df_qc_logs.empty:
+      df_qc_logs["Ngay_Format"] = pd.to_datetime(
+          df_qc_logs["ngay_kiem"], errors="coerce"
+      ).dt.strftime("%d/%m/%Y")
+
+      col_flt_person, col_flt_type = st.columns([1.5, 1])
+      list_inspectors = ["Tất cả nhân sự"] + sorted([
+          str(x).strip()
+          for x in df_qc_logs["nguoi_kiem"].dropna().unique()
+          if str(x).strip()
+      ])
+
+      with col_flt_person:
+        selected_inspector = st.selectbox(
+            "👤 Chọn Nhân sự QC:", list_inspectors, key="leaf_ns_inspector"
+        )
+      with col_flt_type:
+        selected_loai_qc = st.selectbox(
+            "🎯 Phân hệ kiểm:",
+            ["Tất cả", "QC Đầu Vào (DAU_VAO)", "QC Sản Xuất (SAN_XUAT)"],
+            key="leaf_ns_loai_qc",
+        )
+
+      df_filtered = df_qc_logs.copy()
+      if selected_inspector != "Tất cả nhân sự":
+        df_filtered = df_filtered[
+            df_filtered["nguoi_kiem"] == selected_inspector
+        ]
+      if selected_loai_qc == "QC Đầu Vào (DAU_VAO)":
+        df_filtered = df_filtered[df_filtered["loai_qc"] == "DAU_VAO"]
+      elif selected_loai_qc == "QC Sản Xuất (SAN_XUAT)":
+        df_filtered = df_filtered[df_filtered["loai_qc"] == "SAN_XUAT"]
+
+      tot_luot = len(df_filtered)
+      tot_sl_kiem = (
+          df_filtered["sl_kiem"].sum() if "sl_kiem" in df_filtered else 0
+      )
+      tot_sl_loi = (
+          df_filtered["sl_khong_dat"].sum()
+          if "sl_khong_dat" in df_filtered
+          else 0
+      )
+      ty_le_loi = (tot_sl_loi / tot_sl_kiem * 100) if tot_sl_kiem > 0 else 0.0
+
+      render_kpi_cards([
+          {
+              "label": "TỔNG LƯỢT KIỂM",
+              "value": f"{tot_luot:,} lượt",
+              "icon": "📝",
+              "color": COLOR_PRIMARY,
+          },
+          {
+              "label": "TỔNG SL ĐÃ KIỂM",
+              "value": f"{int(tot_sl_kiem):,}",
+              "icon": "🔍",
+              "color": COLOR_SUCCESS,
+          },
+          {
+              "label": "TỔNG SL LỖI",
+              "value": f"{int(tot_sl_loi):,}",
+              "icon": "⚠️",
+              "color": COLOR_DANGER,
+          },
+          {
+              "label": "TỶ LỆ LỖI PHÁT HIỆN",
+              "value": f"{ty_le_loi:.1f}%",
+              "icon": "📈",
+              "color": COLOR_WARNING,
+          },
+      ])
+
+      st.dataframe(df_filtered, use_container_width=True, hide_index=True)
+    else:
+      st.info("💡 Chưa có nhật ký báo cáo QC nào trong Cơ sở dữ liệu.")
+  except Exception as e:
+    st.error(f"⚠️ Lỗi khi tải nhật ký QC: {e}")
+
+elif selected_sub_leaf == "⚙️ Quản Lý Công Việc Con Theo Xưởng":
+  render_page_header(
+      "⚙️ Thiết Lập & Quản Lý Danh Mục Công Việc Con",
+      "Khai báo các công đoạn/công việc con tương ứng với từng xưởng sản xuất"
+      " để nhân viên chọn trên App Mobile",
+      f"{tu_date.strftime('%d/%m/%Y')} → {den_date.strftime('%d/%m/%Y')}",
   )
 
-  tab_sub_vt, tab_sub_lenh, tab_sub_nangsuat, tab_sub_sai_hong = st.tabs([
-      "📦 1. Danh Sách Vật Tư (QA32)",
-      "⚙️ 2. Danh Sách Lệnh Kiểm Tra / Sản Xuất (COOIS)",
-      "👨‍💼 3. Báo Cáo Năng Suất Cá Nhân (Nhật Ký QC)",
-      "🚨 4. Báo Cáo Sai Hỏng Chi Tiết & DM Lỗi",
-  ])
-
-  # SUB-TAB 1: QA32
-  with tab_sub_vt:
-    chart_card_open("⚙️ Bộ Lọc Dữ Liệu QA32")
-    col_flt1, col_flt2, col_flt3, col_flt4 = st.columns([1, 1, 1, 1.5])
-    with col_flt1:
-      filter_status_vt = st.selectbox(
-          "Trạng thái kiểm:",
-          ["Tất cả", "Đã kiểm (Đã UD)", "Chưa kiểm (Chưa UD)"],
-          key="ds_filter_status_vt",
-      )
-    with col_flt3:
-      filter_loai_sp_vt = st.selectbox(
-          "Loại sản phẩm:",
-          ["Tất cả", "Bán thành phẩm (Đầu 5)", "Thành phẩm (Khác Đầu 5)"],
-          key="ds_filter_loai_sp_vt",
-      )
-    with col_flt4:
-      search_keyword_vt = st.text_input(
-          "🔎 Tìm kiếm nhanh (Mã/Tên/NCC):", "", key="ds_search_keyword_vt"
-      )
-    chart_card_close()
-
-    if not df_qa32.empty:
-      df_qa32_view = df_qa32.copy()
-      if "ngay_ve_dt" in df_qa32_view.columns:
-        df_qa32_view["ngay_ve_format"] = pd.to_datetime(
-            df_qa32_view["ngay_ve_dt"], errors="coerce"
-        ).dt.strftime("%d/%m/%Y")
-      else:
-        df_qa32_view["ngay_ve_format"] = "-"
-
-      if "xac_nhan_sap" in df_qa32_view.columns:
-        if filter_status_vt == "Đã kiểm (Đã UD)":
-          df_qa32_view = df_qa32_view[
-              df_qa32_view["xac_nhan_sap"].notna()
-              & (~df_qa32_view["xac_nhan_sap"]
-                  .astype(str)
-                  .str.contains("CHƯA|NAN|NONE", case=False, na=False))
-          ]
-        elif filter_status_vt == "Chưa kiểm (Chưa UD)":
-          df_qa32_view = df_qa32_view[
-              df_qa32_view["xac_nhan_sap"].isna()
-              | df_qa32_view["xac_nhan_sap"]
-              .astype(str)
-              .str.contains("CHƯA|NAN|NONE", case=False, na=False)
-          ]
-
-      if "ma_vt" in df_qa32_view.columns:
-        if filter_loai_sp_vt == "Bán thành phẩm (Đầu 5)":
-          df_qa32_view = df_qa32_view[
-              df_qa32_view["ma_vt"]
-              .astype(str)
-              .str.lstrip("0")
-              .str.startswith("5")
-          ]
-        elif filter_loai_sp_vt == "Thành phẩm (Khác Đầu 5)":
-          df_qa32_view = df_qa32_view[
-              ~df_qa32_view["ma_vt"]
-              .astype(str)
-              .str.lstrip("0")
-              .str.startswith("5")
-          ]
-
-      if search_keyword_vt.strip():
-        kw = search_keyword_vt.strip().lower()
-        m1 = (
-            df_qa32_view["ma_vt"]
-            .astype(str)
-            .str.lower()
-            .str.contains(kw, na=False)
-            if "ma_vt" in df_qa32_view.columns
-            else False
-        )
-        m2 = (
-            df_qa32_view["ten_vt"]
-            .astype(str)
-            .str.lower()
-            .str.contains(kw, na=False)
-            if "ten_vt" in df_qa32_view.columns
-            else False
-        )
-        m3 = (
-            df_qa32_view["ncc"]
-            .astype(str)
-            .str.lower()
-            .str.contains(kw, na=False)
-            if "ncc" in df_qa32_view.columns
-            else False
-        )
-        df_qa32_view = df_qa32_view[m1 | m2 | m3]
-
-      if not df_qa32_view.empty:
-        df_vt_display = pd.DataFrame()
-        df_vt_display["STT"] = np.arange(1, len(df_qa32_view) + 1)
-        df_vt_display["Ngày tháng năm"] = df_qa32_view["ngay_ve_format"].values
-        df_vt_display["Lot"] = (
-            df_qa32_view["lot"].values
-            if "lot" in df_qa32_view.columns
-            else (
-                df_qa32_view["so_lot"].values
-                if "so_lot" in df_qa32_view.columns
-                else df_qa32_view.index + 1
-            )
-        )
-        df_vt_display["Mã vật tư"] = (
-            df_qa32_view["ma_vt"].values
-            if "ma_vt" in df_qa32_view.columns
-            else ""
-        )
-        df_vt_display["Tên vật tư"] = (
-            df_qa32_view["ten_vt"].values
-            if "ten_vt" in df_qa32_view.columns
-            else ""
-        )
-        df_vt_display["Nhà cung cấp"] = (
-            df_qa32_view["ncc"].values if "ncc" in df_qa32_view.columns else ""
-        )
-
-        raw_ud = (
-            df_qa32_view["xac_nhan_sap"].fillna("Chưa kiểm (Chưa UD)").values
-            if "xac_nhan_sap" in df_qa32_view.columns
-            else ["Chưa kiểm (Chưa UD)"] * len(df_qa32_view)
-        )
-        clean_ud = [
-            "Chưa kiểm (Chưa UD)"
-            if (
-                "CHƯA" in str(u).upper()
-                or str(u).strip() in ["nan", "None", ""]
-            )
-            else str(u)
-            for u in raw_ud
-        ]
-        df_vt_display["Giá trị kiểm"] = clean_ud
-
-        st.markdown(f"##### 📋 Danh Sách Vật Tư ({len(df_vt_display):,} bản ghi)")
-        st.dataframe(
-            df_vt_display,
-            column_config={
-                "STT": st.column_config.NumberColumn("STT", width="small"),
-                "Giá trị kiểm": st.column_config.TextColumn(
-                    "Giá trị kiểm", width="medium"
-                ),
-            },
-            use_container_width=True,
-            hide_index=True,
-            height=480,
-        )
-
-        buf_vt = io.BytesIO()
-        with pd.ExcelWriter(buf_vt, engine="openpyxl") as writer:
-          df_vt_display.to_excel(
-              writer, sheet_name="DanhSach_VatTu_QA32", index=False
-          )
-        st.download_button(
-            label="📥 Xuất Bảng Vật Tư (Excel)",
-            data=buf_vt.getvalue(),
-            file_name=(
-                "DanhSach_VatTu_QA32_"
-                f"{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
-            ),
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            type="primary",
-        )
-      else:
-        st.warning("⚠️ Không tìm thấy bản ghi vật tư nào phù hợp với bộ lọc.")
-    else:
-      st.info("💡 Chưa có dữ liệu vật tư.")
-
-  # SUB-TAB 2: COOIS
-  with tab_sub_lenh:
-    chart_card_open("⚙️ Bộ Lọc Dữ Liệu COOIS")
-    col_f1, col_f2, col_f3, col_f4 = st.columns([1, 1, 1, 1.5])
-    with col_f1:
-      filter_status_l = st.selectbox(
-          "Trạng thái:",
-          ["Tất cả", "Đã xong", "Chưa xong"],
-          key="ds_filter_status_l",
-      )
-    with col_f2:
-      filter_phan_he_l = st.selectbox(
-          "Xưởng / Phân hệ:",
-          ["Tất cả", "Cơ khí (CO_KHI)", "TU/TI (TU_TI)", "Công tơ (CONG_TO)"],
-          key="ds_filter_phan_he_l",
-      )
-    with col_f3:
-      filter_loai_sp_l = st.selectbox(
-          "Loại sản phẩm:",
-          ["Tất cả", "Bán thành phẩm (Đầu 4)", "Sản phẩm (Đầu 5)"],
-          key="ds_filter_loai_sp_l",
-      )
-    with col_f4:
-      search_keyword_l = st.text_input(
-          "🔎 Tìm kiếm nhanh (Số lệnh/Mã/Tên):", "", key="ds_search_keyword_l"
-      )
-    chart_card_close()
-
-    phan_he_code_map = {
-        "Cơ khí (CO_KHI)": "CO_KHI",
-        "TU/TI (TU_TI)": "TU_TI",
-        "Công tơ (CONG_TO)": "CONG_TO",
-    }
-
-    if not df_coois.empty:
-      df_coois_view = df_coois.copy()
-      if "ngay_lenh_dt" in df_coois_view.columns:
-        df_coois_view["ngay_lenh_format"] = pd.to_datetime(
-            df_coois_view["ngay_lenh_dt"], errors="coerce"
-        ).dt.strftime("%d/%m/%Y")
-      else:
-        df_coois_view["ngay_lenh_format"] = "-"
-
-      if filter_phan_he_l != "Tất cả" and "phan_he" in df_coois_view.columns:
-        target_ph = phan_he_code_map.get(filter_phan_he_l)
-        df_coois_view = df_coois_view[df_coois_view["phan_he"] == target_ph]
-
-      if (
-          "sl_tong" in df_coois_view.columns
-          and "sl_ht" in df_coois_view.columns
-      ):
-        if filter_status_l == "Đã xong":
-          df_coois_view = df_coois_view[
-              df_coois_view["sl_ht"] >= df_coois_view["sl_tong"]
-          ]
-        elif filter_status_l == "Chưa xong":
-          df_coois_view = df_coois_view[
-              df_coois_view["sl_ht"] < df_coois_view["sl_tong"]
-          ]
-
-      if "ma_tp" in df_coois_view.columns:
-        if filter_loai_sp_l == "Bán thành phẩm (Đầu 4)":
-          df_coois_view = df_coois_view[
-              df_coois_view["ma_tp"]
-              .astype(str)
-              .str.split(".")
-              .str[0]
-              .str.lstrip("0")
-              .str.startswith("4")
-          ]
-        elif filter_loai_sp_l == "Sản phẩm (Đầu 5)":
-          df_coois_view = df_coois_view[
-              df_coois_view["ma_tp"]
-              .astype(str)
-              .str.split(".")
-              .str[0]
-              .str.lstrip("0")
-              .str.startswith("5")
-          ]
-
-      if search_keyword_l.strip():
-        kw = search_keyword_l.strip().lower()
-        m1 = (
-            df_coois_view["so_lenh"]
-            .astype(str)
-            .str.lower()
-            .str.contains(kw, na=False)
-            if "so_lenh" in df_coois_view.columns
-            else False
-        )
-        m2 = (
-            df_coois_view["ma_tp"]
-            .astype(str)
-            .str.lower()
-            .str.contains(kw, na=False)
-            if "ma_tp" in df_coois_view.columns
-            else False
-        )
-        m3 = (
-            df_coois_view["ten_tp"]
-            .astype(str)
-            .str.lower()
-            .str.contains(kw, na=False)
-            if "ten_tp" in df_coois_view.columns
-            else False
-        )
-        df_coois_view = df_coois_view[m1 | m2 | m3]
-
-      if not df_coois_view.empty:
-        df_lenh_display = pd.DataFrame()
-        df_lenh_display["STT"] = np.arange(1, len(df_coois_view) + 1)
-        df_lenh_display["Ngày tháng năm"] = df_coois_view[
-            "ngay_lenh_format"
-        ].values
-        df_lenh_display["Lệnh"] = (
-            df_coois_view["so_lenh"].values
-            if "so_lenh" in df_coois_view.columns
-            else ""
-        )
-        df_lenh_display["Mã sản phẩm"] = (
-            df_coois_view["ma_tp"].values
-            if "ma_tp" in df_coois_view.columns
-            else ""
-        )
-        df_lenh_display["Tên sản phẩm"] = (
-            df_coois_view["ten_tp"].values
-            if "ten_tp" in df_coois_view.columns
-            else ""
-        )
-        df_lenh_display["Tổng số lượng"] = (
-            df_coois_view["sl_tong"].values
-            if "sl_tong" in df_coois_view.columns
-            else 0
-        )
-        df_lenh_display["Tổng số đã giao"] = (
-            df_coois_view["sl_ht"].values
-            if "sl_ht" in df_coois_view.columns
-            else 0
-        )
-        df_lenh_display["Text ghi chú"] = (
-            df_coois_view["ghi_chu"].values
-            if "ghi_chu" in df_coois_view.columns
-            else (
-                df_coois_view["phan_he"].values
-                if "phan_he" in df_coois_view.columns
-                else ""
-            )
-        )
-
-        st.markdown(
-            "##### ⚙️ Danh Sách Lệnh Kiểm Tra / Sản Xuất"
-            f" ({len(df_lenh_display):,} bản ghi)"
-        )
-        st.dataframe(
-            df_lenh_display,
-            column_config={
-                "STT": st.column_config.NumberColumn("STT", width="small"),
-                "Tổng số lượng": st.column_config.NumberColumn(
-                    "Tổng số lượng", format="%d"
-                ),
-                "Tổng số đã giao": st.column_config.NumberColumn(
-                    "Tổng số đã giao", format="%d"
-                ),
-            },
-            use_container_width=True,
-            hide_index=True,
-            height=480,
-        )
-
-        buf_lenh = io.BytesIO()
-        with pd.ExcelWriter(buf_lenh, engine="openpyxl") as writer:
-          df_lenh_display.to_excel(
-              writer, sheet_name="DanhSach_Lenh_COOIS", index=False
-          )
-        st.download_button(
-            label="📥 Xuất Bảng Lệnh Kiểm Tra (Excel)",
-            data=buf_lenh.getvalue(),
-            file_name=(
-                "DanhSach_Lenh_COOIS_"
-                f"{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
-            ),
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            type="primary",
-        )
-      else:
-        st.warning("⚠️ Không tìm thấy bản ghi lệnh nào phù hợp với bộ lọc.")
-    else:
-      st.info("💡 Chưa có dữ liệu lệnh sản xuất.")
-
-  # SUB-TAB 3: BÁO CÁO NĂNG SUẤT CÁ NHÂN VÀ TÍNH NĂNG QUẢN LÝ CÔNG VIỆC CON
-  with tab_sub_nangsuat:
-    tab_ns1, tab_ns2 = st.tabs([
-        "📊 1. Nhật Ký & Năng Suất Cá Nhân",
-        "⚙️ 2. Quản Lý Danh Mục Công Việc Con Theo Xưởng",
-    ])
-
-    with tab_ns1:
-      try:
-        conn = get_db_connection()
-        df_qc_logs = pd.read_sql_query(
-            "SELECT id, loai_qc, so_lot, ma_vt, ten_vt, ncc, sl_kiem,"
-            " sl_khong_dat, sl_dat, ket_luan, nguoi_kiem, ngay_kiem, ghi_chu,"
-            " kieu_loi, cong_viec_con FROM tb_qc_dau_vao ORDER BY ngay_kiem"
-            " DESC",
-            conn,
-        )
-        conn.close()
-
-        if not df_qc_logs.empty:
-          df_qc_logs["ngay_kiem_dt"] = pd.to_datetime(
-              df_qc_logs["ngay_kiem"], errors="coerce"
-          )
-          df_qc_logs["Ngay_Format"] = df_qc_logs["ngay_kiem_dt"].dt.strftime(
-              "%d/%m/%Y"
-          )
-
-          chart_card_open("👨‍💼 Bộ Lọc Tính Năng Suất Làm Việc QC")
-          col_flt_person, col_flt_type = st.columns([1.5, 1])
-
-          list_inspectors = ["Tất cả nhân sự"] + sorted([
-              str(x).strip()
-              for x in df_qc_logs["nguoi_kiem"].dropna().unique()
-              if str(x).strip()
-          ])
-
-          with col_flt_person:
-            selected_inspector = st.selectbox(
-                "👤 Chọn Nhân sự QC:", list_inspectors, key="ns_inspector"
-            )
-
-          with col_flt_type:
-            selected_loai_qc = st.selectbox(
-                "🎯 Phân hệ kiểm:",
-                ["Tất cả", "QC Đầu Vào (DAU_VAO)", "QC Sản Xuất (SAN_XUAT)"],
-                key="ns_loai_qc",
-            )
-          chart_card_close()
-
-          df_filtered = df_qc_logs.copy()
-
-          if selected_inspector != "Tất cả nhân sự":
-            df_filtered = df_filtered[
-                df_filtered["nguoi_kiem"] == selected_inspector
-            ]
-
-          if selected_loai_qc == "QC Đầu Vào (DAU_VAO)":
-            df_filtered = df_filtered[df_filtered["loai_qc"] == "DAU_VAO"]
-          elif selected_loai_qc == "QC Sản Xuất (SAN_XUAT)":
-            df_filtered = df_filtered[df_filtered["loai_qc"] == "SAN_XUAT"]
-
-          tot_luot = len(df_filtered)
-          tot_sl_kiem = (
-              df_filtered["sl_kiem"].sum() if "sl_kiem" in df_filtered else 0
-          )
-          tot_sl_loi = (
-              df_filtered["sl_khong_dat"].sum()
-              if "sl_khong_dat" in df_filtered
-              else 0
-          )
-          ty_le_loi = (
-              (tot_sl_loi / tot_sl_kiem * 100) if tot_sl_kiem > 0 else 0.0
-          )
-
-          render_kpi_cards([
-              {
-                  "label": "TỔNG LƯỢT KIỂM TRẢ",
-                  "value": f"{tot_luot:,} lượt",
-                  "icon": "📝",
-                  "color": COLOR_PRIMARY,
-              },
-              {
-                  "label": "TỔNG SỐ LƯỢNG ĐÃ KIỂM",
-                  "value": f"{int(tot_sl_kiem):,}",
-                  "icon": "🔍",
-                  "color": COLOR_SUCCESS,
-              },
-              {
-                  "label": "TỔNG SỐ LƯỢNG LỖI",
-                  "value": f"{int(tot_sl_loi):,}",
-                  "icon": "⚠️",
-                  "color": COLOR_DANGER,
-              },
-              {
-                  "label": "TỶ LỆ LỖI PHÁT HIỆN",
-                  "value": f"{ty_le_loi:.1f}%",
-                  "icon": "📈",
-                  "color": COLOR_WARNING,
-              },
-          ])
-
-          df_display = pd.DataFrame()
-          df_display["STT"] = np.arange(1, len(df_filtered) + 1)
-          df_display["Ngày kiểm"] = df_filtered["Ngay_Format"].values
-          df_display["Thời gian"] = df_filtered["ngay_kiem"].values
-          df_display["Người kiểm tra"] = df_filtered["nguoi_kiem"].values
-          df_display["Loại QC"] = df_filtered["loai_qc"].map(
-              {"DAU_VAO": "QC Đầu Vào", "SAN_XUAT": "QC Sản Xuất"}
-          )
-          df_display["Lô / Lệnh SX"] = df_filtered["so_lot"].values
-          df_display["Mã mặt hàng"] = df_filtered["ma_vt"].values
-          df_display["Tên mặt hàng"] = df_filtered["ten_vt"].values
-          df_display["Đơn vị / NCC"] = df_filtered["ncc"].values
-          df_display["Công việc con"] = df_filtered["cong_viec_con"].values
-          df_display["SL Kiểm"] = df_filtered["sl_kiem"].values
-          df_display["SL Lỗi"] = df_filtered["sl_khong_dat"].values
-          df_display["SL Đạt"] = df_filtered["sl_dat"].values
-          df_display["Kết luận"] = df_filtered["ket_luan"].values
-          df_display["Ghi chú"] = df_filtered["ghi_chu"].values
-
-          st.markdown(
-              f"##### 📋 BẢNG NHẬT KÝ KIỂM TRẢ CHI TIẾT ({len(df_display):,} bản"
-              " ghi)"
-          )
-          st.dataframe(
-              df_display,
-              column_config={
-                  "STT": st.column_config.NumberColumn("STT", width="small"),
-                  "SL Kiểm": st.column_config.NumberColumn(
-                      "SL Kiểm", format="%d"
-                  ),
-                  "SL Lỗi": st.column_config.NumberColumn(
-                      "SL Lỗi", format="%d"
-                  ),
-                  "SL Đạt": st.column_config.NumberColumn(
-                      "SL Đạt", format="%d"
-                  ),
-              },
-              use_container_width=True,
-              hide_index=True,
-              height=450,
-          )
-
-          buf_ns = io.BytesIO()
-          with pd.ExcelWriter(buf_ns, engine="openpyxl") as writer:
-            df_display.to_excel(
-                writer, sheet_name="NangSuat_QC_ChiTiet", index=False
-            )
-
-          st.download_button(
-              label="📥 XUẤT BÁO CÁO NĂNG SUẤT QC (EXCEL)",
-              data=buf_ns.getvalue(),
-              file_name=(
-                  "BaoCao_NangSuat_QC_"
-                  f"{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
-              ),
-              mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-              type="primary",
-          )
-        else:
-          st.info("💡 Chưa có nhật ký báo cáo QC nào trong Cơ sở dữ liệu.")
-      except Exception as e:
-        st.error(f"⚠️ Lỗi khi tải nhật ký QC: {e}")
-
-    with tab_ns2:
-      st.markdown("##### ⚙️ THÊM MỚI CÔNG VIỆC CON / CÔNG ĐOẠN CHO CÁC XƯỞNG")
-      col_cv1, col_cv2, col_cv3 = st.columns([1, 1.5, 1])
-
-      with col_cv1:
-        add_ph_cv = st.selectbox(
-            "Chọn Xưởng / Phân hệ:",
-            ["DAU_VAO", "CO_KHI", "TU_TI", "CONG_TO"],
-            key="add_ph_cv",
-        )
-      with col_cv2:
-        add_ten_cv = st.text_input(
-            "Tên công việc con mới:", placeholder="Gõ tên công đoạn..."
-        )
-      with col_cv3:
-        st.markdown("<div style='height:25px;'></div>", unsafe_allow_html=True)
-        if st.button(
-            "➕ Thêm Công Việc", type="primary", use_container_width=True
-        ):
-          if add_ten_cv.strip():
-            try:
-              conn = get_db_connection()
-              cursor = conn.cursor()
-              cursor.execute(
-                  "INSERT INTO tb_dm_cong_viec (phan_he, ten_cong_viec)"
-                  " VALUES (?, ?)",
-                  (add_ph_cv, add_ten_cv.strip()),
-              )
-              conn.commit()
-              conn.close()
-              st.success(f"✅ Đã thêm công việc: {add_ten_cv.strip()}")
-              st.rerun()
-            except Exception as ex:
-              st.error(f"Lỗi thêm công việc con: {ex}")
-          else:
-            st.warning("⚠️ Vui lòng nhập tên công việc con!")
-
-      try:
-        conn = get_db_connection()
-        df_dm_cv = pd.read_sql_query(
-            "SELECT id, phan_he, ten_cong_viec FROM tb_dm_cong_viec ORDER BY"
-            " phan_he ASC, ten_cong_viec ASC",
-            conn,
-        )
-        conn.close()
-
-        if not df_dm_cv.empty:
-          st.markdown("##### 📜 Danh Mục Các Công Việc Con Đang Được Áp Dụng")
-          df_dm_cv.columns = ["ID", "Phân Hệ / Xưởng", "Tên Công Việc Con"]
-          st.dataframe(df_dm_cv, use_container_width=True, hide_index=True)
-      except Exception as ex:
-        st.error(f"Lỗi nạp danh mục công việc: {ex}")
-
-  # SUB-TAB 4: BÁO CÁO SAI HỎNG CHI TIẾT & BẢNG QUẢN LÝ DANH MỤC LỖI
-  with tab_sub_sai_hong:
-    st.markdown("#### 🚨 BÁO CÁO PHÂN TÍCH SAI HỎNG & BẢNG LOẠI LỖI")
-
-    sub_sh1, sub_sh2 = st.tabs(
-        ["📊 1. Thống Kê & Phân Tích Sai Hỏng", "⚙️ 2. Quản Lý Danh Mục Loại Lỗi"]
+  col_cv1, col_cv2, col_cv3 = st.columns([1, 1.5, 1])
+  with col_cv1:
+    add_ph_cv = st.selectbox(
+        "Chọn Xưởng / Phân hệ:",
+        ["DAU_VAO", "CO_KHI", "TU_TI", "CONG_TO"],
+        key="leaf_add_ph_cv",
     )
+  with col_cv2:
+    add_ten_cv = st.text_input(
+        "Tên công việc con mới:", placeholder="Gõ tên công đoạn..."
+    )
+  with col_cv3:
+    st.markdown("<div style='height:25px;'></div>", unsafe_allow_html=True)
+    if st.button("➕ Thêm Công Việc", type="primary", use_container_width=True):
+      if add_ten_cv.strip():
+        try:
+          conn = get_db_connection()
+          cursor = conn.cursor()
+          cursor.execute(
+              "INSERT INTO tb_dm_cong_viec (phan_he, ten_cong_viec) VALUES (?,"
+              " ?)",
+              (add_ph_cv, add_ten_cv.strip()),
+          )
+          conn.commit()
+          conn.close()
+          st.success(f"✅ Đã thêm công việc: {add_ten_cv.strip()}")
+          st.rerun()
+        except Exception as ex:
+          st.error(f"Lỗi thêm công việc con: {ex}")
+      else:
+        st.warning("⚠️ Vui lòng nhập tên công việc con!")
 
-    with sub_sh1:
-      try:
-        conn = get_db_connection()
-        df_defects = pd.read_sql_query(
-            "SELECT * FROM tb_qc_dau_vao WHERE sl_khong_dat > 0 OR (kieu_loi"
-            " IS NOT NULL AND kieu_loi != '') ORDER BY ngay_kiem DESC",
-            conn,
-        )
-        conn.close()
+  try:
+    conn = get_db_connection()
+    df_dm_cv = pd.read_sql_query(
+        "SELECT id, phan_he, ten_cong_viec FROM tb_dm_cong_viec ORDER BY phan_he"
+        " ASC, ten_cong_viec ASC",
+        conn,
+    )
+    conn.close()
 
-        if not df_defects.empty:
-          col_sh_f1, col_sh_f2 = st.columns(2)
-          with col_sh_f1:
-            sh_filter_loai = st.selectbox(
-                "Lọc Phân Hệ:",
-                ["Tất cả", "DAU_VAO", "CO_KHI", "TU_TI", "CONG_TO"],
-                key="sh_flt_ph",
-            )
+    if not df_dm_cv.empty:
+      st.markdown("##### 📜 Danh Mục Các Công Việc Con Đang Được Áp Dụng")
+      df_dm_cv.columns = ["ID", "Phân Hệ / Xưởng", "Tên Công Việc Con"]
+      st.dataframe(df_dm_cv, use_container_width=True, hide_index=True)
+  except Exception as ex:
+    st.error(f"Lỗi nạp danh mục công việc: {ex}")
 
-          df_sh_view = df_defects.copy()
-          if sh_filter_loai != "Tất cả":
-            df_sh_view = df_sh_view[
-                df_sh_view["loai_qc"].str.contains(sh_filter_loai, na=False)
-                | df_sh_view["ncc"].str.contains(sh_filter_loai, na=False)
-            ]
+elif selected_sub_leaf == "🚨 Báo Cáo Sai Hỏng Chi Tiết & DM Lỗi":
+  render_page_header(
+      "🚨 Báo Cáo Phân Tích Sai Hỏng & Quản Lý Danh Mục Lỗi",
+      "Thống kê các kiểu lỗi phát sinh nhiều nhất và quản lý thiết lập danh"
+      " mục loại lỗi cho xưởng",
+      f"{tu_date.strftime('%d/%m/%Y')} → {den_date.strftime('%d/%m/%Y')}",
+  )
 
-          if not df_sh_view.empty and "kieu_loi" in df_sh_view.columns:
-            defect_counts = (
-                df_sh_view.groupby("kieu_loi")["sl_khong_dat"]
-                .sum()
-                .reset_index()
-            )
-            defect_counts = defect_counts[defect_counts["kieu_loi"] != ""]
-            defect_counts = defect_counts.sort_values(
-                by="sl_khong_dat", ascending=False
-            )
+  sub_sh1, sub_sh2 = st.tabs(
+      ["📊 1. Thống Kê & Phân Tích Sai Hỏng", "⚙️ 2. Quản Lý Danh Mục Loại Lỗi"]
+  )
 
-            if not defect_counts.empty:
-              fig_err = go.Figure(
-                  go.Bar(
-                      x=defect_counts["sl_khong_dat"],
-                      y=defect_counts["kieu_loi"],
-                      orientation="h",
-                      marker=dict(color=COLOR_DANGER),
-                      text=[f"{v:,.0f}" for v in defect_counts["sl_khong_dat"]],
-                      textposition="outside",
-                  )
-              )
-              fig_err.update_layout(
-                  title="<b>TOP CÁC KIỂU SAI HỎNG PHÁT HIỆN NHIỀU NHẤT</b>",
-                  margin=dict(l=10, r=40, t=40, b=10),
-                  height=320,
-                  paper_bgcolor="#FFFFFF",
-                  plot_bgcolor="#FFFFFF",
-              )
-              st.plotly_chart(
-                  fig_err,
-                  use_container_width=True,
-                  key="sh_chart_fig_err",
-              )
+  with sub_sh1:
+    try:
+      conn = get_db_connection()
+      df_defects = pd.read_sql_query(
+          "SELECT * FROM tb_qc_dau_vao WHERE sl_khong_dat > 0 OR (kieu_loi IS"
+          " NOT NULL AND kieu_loi != '') ORDER BY ngay_kiem DESC",
+          conn,
+      )
+      conn.close()
 
-          st.markdown("##### 📋 Danh Sách Ca Báo Lỗi Chi Tiết")
-          df_sh_display = df_sh_view[[
-              "ngay_kiem",
-              "nguoi_kiem",
-              "so_lot",
-              "ma_vt",
-              "ten_vt",
-              "ncc",
-              "kieu_loi",
-              "sl_khong_dat",
-              "ghi_chu",
-          ]]
-          df_sh_display.columns = [
-              "Thời Gian",
-              "Người Kiểm",
-              "Lô/Lệnh",
-              "Mã Hàng",
-              "Tên Mặt Hàng",
-              "Xưởng/NCC",
-              "Kiểu Sai Hỏng",
-              "SL Lỗi",
-              "Ghi Chú Chi Tiết",
-          ]
-          st.dataframe(
-              df_sh_display, use_container_width=True, hide_index=True
+      if not df_defects.empty:
+        col_sh_f1, col_sh_f2 = st.columns(2)
+        with col_sh_f1:
+          sh_filter_loai = st.selectbox(
+              "Lọc Phân Hệ:",
+              ["Tất cả", "DAU_VAO", "CO_KHI", "TU_TI", "CONG_TO"],
+              key="leaf_sh_flt_ph",
           )
 
+        df_sh_view = df_defects.copy()
+        if sh_filter_loai != "Tất cả":
+          df_sh_view = df_sh_view[
+              df_sh_view["loai_qc"].str.contains(sh_filter_loai, na=False)
+              | df_sh_view["ncc"].str.contains(sh_filter_loai, na=False)
+          ]
+
+        if not df_sh_view.empty and "kieu_loi" in df_sh_view.columns:
+          defect_counts = (
+              df_sh_view.groupby("kieu_loi")["sl_khong_dat"].sum().reset_index()
+          )
+          defect_counts = defect_counts[defect_counts["kieu_loi"] != ""]
+          defect_counts = defect_counts.sort_values(
+              by="sl_khong_dat", ascending=False
+          )
+
+          if not defect_counts.empty:
+            fig_err = go.Figure(
+                go.Bar(
+                    x=defect_counts["sl_khong_dat"],
+                    y=defect_counts["kieu_loi"],
+                    orientation="h",
+                    marker=dict(color=COLOR_DANGER),
+                    text=[f"{v:,.0f}" for v in defect_counts["sl_khong_dat"]],
+                    textposition="outside",
+                )
+            )
+            fig_err.update_layout(
+                title="<b>TOP CÁC KIỂU SAI HỎNG PHÁT HIỆN NHIỀU NHẤT</b>",
+                margin=dict(l=10, r=40, t=40, b=10),
+                height=320,
+                paper_bgcolor="#FFFFFF",
+                plot_bgcolor="#FFFFFF",
+            )
+            st.plotly_chart(
+                fig_err,
+                use_container_width=True,
+                key="leaf_sh_chart_fig_err",
+            )
+
+        st.markdown("##### 📋 Danh Sách Ca Báo Lỗi Chi Tiết")
+        st.dataframe(df_sh_view, use_container_width=True, hide_index=True)
+      else:
+        st.success("🎉 Chưa ghi nhận ca phát sinh sai hỏng nào!")
+    except Exception as e:
+      st.error(f"Lỗi tải báo cáo sai hỏng: {e}")
+
+  with sub_sh2:
+    st.markdown("##### ⚙️ THÊM MỚI KIỂU SAI HỎNG CHO CÁC XƯỞNG")
+    col_add1, col_add2, col_add3 = st.columns([1, 1.5, 1])
+
+    with col_add1:
+      add_phan_he = st.selectbox(
+          "Chọn Xưởng / Phân hệ:",
+          ["DAU_VAO", "CO_KHI", "TU_TI", "CONG_TO"],
+          key="leaf_add_ph_loi",
+      )
+    with col_add2:
+      add_ten_loi = st.text_input(
+          "Tên kiểu sai hỏng mới:", placeholder="Gõ tên loại lỗi..."
+      )
+    with col_add3:
+      st.markdown("<div style='height:25px;'></div>", unsafe_allow_html=True)
+      if st.button("➕ Thêm Loại Lỗi", type="primary", use_container_width=True):
+        if add_ten_loi.strip():
+          try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO tb_dm_loai_loi (phan_he, ten_loi) VALUES (?, ?)",
+                (add_phan_he, add_ten_loi.strip()),
+            )
+            conn.commit()
+            conn.close()
+            st.success(f"✅ Đã thêm loại lỗi: {add_ten_loi.strip()}")
+            st.rerun()
+          except Exception as ex:
+            st.error(f"Lỗi thêm loại lỗi: {ex}")
         else:
-          st.success("🎉 Chưa ghi nhận ca phát sinh sai hỏng nào!")
-      except Exception as e:
-        st.error(f"Lỗi tải báo cáo sai hỏng: {e}")
+          st.warning("⚠️ Vui lòng nhập tên loại lỗi!")
 
-    with sub_sh2:
-      st.markdown("##### ⚙️ THÊM MỚI KIỂU SAI HỎNG CHO CÁC XƯỞNG")
-      col_add1, col_add2, col_add3 = st.columns([1, 1.5, 1])
+    try:
+      conn = get_db_connection()
+      df_dm_loi = pd.read_sql_query(
+          "SELECT id, phan_he, ten_loi FROM tb_dm_loai_loi ORDER BY phan_he"
+          " ASC, ten_loi ASC",
+          conn,
+      )
+      conn.close()
 
-      with col_add1:
-        add_phan_he = st.selectbox(
-            "Chọn Xưởng / Phân hệ:",
-            ["DAU_VAO", "CO_KHI", "TU_TI", "CONG_TO"],
-            key="add_ph_loi",
-        )
-      with col_add2:
-        add_ten_loi = st.text_input(
-            "Tên kiểu sai hỏng mới:", placeholder="Gõ tên loại lỗi..."
-        )
-      with col_add3:
-        st.markdown("<div style='height:25px;'></div>", unsafe_allow_html=True)
-        if st.button("➕ Thêm Loại Lỗi", type="primary", use_container_width=True):
-          if add_ten_loi.strip():
-            try:
-              conn = get_db_connection()
-              cursor = conn.cursor()
-              cursor.execute(
-                  "INSERT INTO tb_dm_loai_loi (phan_he, ten_loi) VALUES (?, ?)",
-                  (add_phan_he, add_ten_loi.strip()),
-              )
-              conn.commit()
-              conn.close()
-              st.success(f"✅ Đã thêm loại lỗi: {add_ten_loi.strip()}")
-              st.rerun()
-            except Exception as ex:
-              st.error(f"Lỗi thêm loại lỗi: {ex}")
-          else:
-            st.warning("⚠️ Vui lòng nhập tên loại lỗi!")
-
-      try:
-        conn = get_db_connection()
-        df_dm_loi = pd.read_sql_query(
-            "SELECT id, phan_he, ten_loi FROM tb_dm_loai_loi ORDER BY phan_he"
-            " ASC, ten_loi ASC",
-            conn,
-        )
-        conn.close()
-
-        if not df_dm_loi.empty:
-          st.markdown("##### 📜 Danh Mục Các Loại Lỗi Đang Được Áp Dụng")
-          df_dm_loi.columns = ["ID", "Phân Hệ / Xưởng", "Tên Kiểu Sai Hỏng"]
-          st.dataframe(df_dm_loi, use_container_width=True, hide_index=True)
-      except Exception as ex:
-        st.error(f"Lỗi nạp danh mục loại lỗi: {ex}")
+      if not df_dm_loi.empty:
+        st.markdown("##### 📜 Danh Mục Các Loại Lỗi Đang Được Áp Dụng")
+        df_dm_loi.columns = ["ID", "Phân Hệ / Xưởng", "Tên Kiểu Sai Hỏng"]
+        st.dataframe(df_dm_loi, use_container_width=True, hide_index=True)
+    except Exception as ex:
+      st.error(f"Lỗi nạp danh mục loại lỗi: {ex}")
