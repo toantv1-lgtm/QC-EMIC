@@ -6,18 +6,28 @@ import pandas as pd
 from PIL import Image
 import streamlit as st
 
-# ================= 1. KẾT NỐI CSDL CHUNG TRÊN GOOGLE DRIVE =================
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "Report_Database.db")
-IMG_DIR = os.path.join(BASE_DIR, "Anh_kiem_tra_dau_vao")
+# ================= 1. KẾT NỐI CSDL AN TOÀN (TURSO CLOUD / LOCAL SQLITE) =================
+try:
+  USE_TURSO = "TURSO_DATABASE_URL" in st.secrets
+except Exception:
+  USE_TURSO = False
 
-os.makedirs(IMG_DIR, exist_ok=True)
+if USE_TURSO:
+  import libsql_experimental as libsql
 
 
 def get_db_connection():
-  conn = sqlite3.connect(DB_PATH, timeout=30.0)
-  conn.execute("PRAGMA journal_mode=WAL;")
-  conn.row_factory = sqlite3.Row
+  if USE_TURSO:
+    conn = libsql.connect(
+        database=st.secrets["TURSO_DATABASE_URL"],
+        auth_token=st.secrets.get("TURSO_AUTH_TOKEN", ""),
+    )
+  else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    DB_PATH = os.path.join(BASE_DIR, "Report_Database.db")
+    conn = sqlite3.connect(DB_PATH, timeout=30.0)
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.row_factory = sqlite3.Row
   return conn
 
 
@@ -51,55 +61,25 @@ st.markdown(
         margin-bottom: 14px;
         border: 1px solid rgba(255, 255, 255, 0.3);
     }
-    .emic-logo { 
-        font-size: 11px; 
-        font-weight: 900; 
-        letter-spacing: 2px; 
-        color: #FDE047; 
-        text-transform: uppercase; 
-        margin-bottom: 3px;
-    }
-    .app-title { 
-        font-size: 19px; 
-        font-weight: 900; 
-        color: #FFFFFF; 
-        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    }
+    .emic-logo { font-size: 11px; font-weight: 900; letter-spacing: 2px; color: #FDE047; text-transform: uppercase; margin-bottom: 3px; }
+    .app-title { font-size: 19px; font-weight: 900; color: #FFFFFF; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
     .stTextInput input, .stSelectbox select, .stNumberInput input {
-        font-size: 13.5px !important; 
-        height: 44px !important; 
-        border-radius: 12px !important;
-        border: 2px solid #CBD5E1 !important; 
-        font-weight: 700 !important;
-        background-color: #FFFFFF !important;
-        color: #0F172A !important;
+        font-size: 13.5px !important; height: 44px !important; border-radius: 12px !important;
+        border: 2px solid #CBD5E1 !important; font-weight: 700 !important; background-color: #FFFFFF !important; color: #0F172A !important;
     }
-    label { 
-        font-size: 11.5px !important; 
-        color: #475569 !important; 
-        font-weight: 800 !important; 
-        text-transform: uppercase; 
-    }
+    label { font-size: 11.5px !important; color: #475569 !important; font-weight: 800 !important; text-transform: uppercase; }
     
     div.stButton > button[kind="primary"] {
         background: linear-gradient(135deg, #FF416C 0%, #FF4B2B 100%) !important;
-        color: white !important; 
-        font-size: 16px !important; 
-        min-height: 52px !important;
-        border-radius: 14px !important; 
-        border: none !important; 
-        font-weight: 900 !important;
+        color: white !important; font-size: 16px !important; min-height: 52px !important;
+        border-radius: 14px !important; border: none !important; font-weight: 900 !important;
         box-shadow: 0 8px 20px rgba(255, 75, 43, 0.4) !important;
     }
 
     .mobile-card {
-        background-color: #FFFFFF; 
-        padding: 14px; 
-        border-radius: 16px;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05); 
-        border: 1px solid #E2E8F0; 
-        margin-bottom: 12px;
+        background-color: #FFFFFF; padding: 14px; border-radius: 16px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05); border: 1px solid #E2E8F0; margin-bottom: 12px;
     }
     </style>
 """,
@@ -131,14 +111,14 @@ def init_db():
                 img1 TEXT, img2 TEXT
             )
         """)
-    conn.commit()
+    if not USE_TURSO:
+      conn.commit()
     conn.close()
   except Exception:
     pass
 
 
 def get_last_inspector_name():
-  """Lấy tên người kiểm tra vừa nhập gần nhất từ CSDL"""
   try:
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -157,14 +137,12 @@ def get_last_inspector_name():
 
 init_db()
 
-# Khởi tạo giá trị người kiểm tra trong Session
 if "saved_inspector_name" not in st.session_state:
   st.session_state["saved_inspector_name"] = get_last_inspector_name()
 
 # ================= 3. BỘ LỌC CHUNG VÀ TỰ ĐỘNG LƯU TÊN =================
 st.markdown("<div class='mobile-card'>", unsafe_allow_html=True)
 
-# 1. Ô duy nhất nhập Tên người kiểm (Tự ghi nhớ)
 nguoi_kiem_input = st.text_input(
     "👤 HỌ VÀ TÊN NGƯỜI KIỂM TRA:",
     value=st.session_state["saved_inspector_name"],
@@ -173,7 +151,6 @@ nguoi_kiem_input = st.text_input(
 if nguoi_kiem_input != st.session_state["saved_inspector_name"]:
   st.session_state["saved_inspector_name"] = nguoi_kiem_input
 
-# 2. Chọn Loại QC (Đầu vào hay Sản xuất)
 loai_qc_option = st.radio(
     "🎯 CHỌN PHÂN HỆ PHẠM VI KIỂM TRA:",
     ["📦 QC Đầu Vào (Vật tư)", "⚙️ QC Sản Xuất (Lệnh SX)"],
@@ -181,7 +158,6 @@ loai_qc_option = st.radio(
 )
 is_qc_dau_vao = "Vật tư" in loai_qc_option
 
-# 3. Dải ngày mặc định: Từ đầu tháng hiện tại -> Hôm nay
 today = date.today()
 first_day_of_month = date(today.year, today.month, 1)
 
@@ -191,7 +167,6 @@ with col_d1:
 with col_d2:
   den_date = st.date_input("Đến ngày:", today)
 
-# 4. Bộ lọc bổ sung tùy theo Loại QC
 if is_qc_dau_vao:
   col_flt1, col_flt2 = st.columns(2)
   with col_flt1:
@@ -270,7 +245,6 @@ filtered_items = []
 
 if not df_raw.empty:
   if is_qc_dau_vao:
-    # LỌC DỮ LIỆU TỪ QA32 (ĐẦU VÀO)
     for _, r in df_raw.iterrows():
       so_lot = str(
           r.get(
@@ -311,7 +285,6 @@ if not df_raw.empty:
           "is_checked": is_checked,
       })
   else:
-    # LỌC DỮ LIỆU TỪ COOIS (SẢN XUẤT)
     for _, r in df_raw.iterrows():
       so_lenh = str(r.get("lenh_sx", r.get("so_lenh", ""))).strip()
       ma_tp = str(r.get("ma_tp", "")).strip()
@@ -319,7 +292,6 @@ if not df_raw.empty:
       phan_he = str(r.get("phan_he", "")).strip()
       is_checked = so_lenh in checked_set
 
-      # 1. Lọc Xưởng / Phân hệ
       if filter_xuong != "Tất cả":
         if "Cơ khí" in filter_xuong and phan_he != "CO_KHI":
           continue
@@ -328,13 +300,11 @@ if not df_raw.empty:
         if "Công tơ" in filter_xuong and phan_he != "CONG_TO":
           continue
 
-      # 2. Lọc Trạng thái làm
       if status_filter == "Chưa làm" and is_checked:
         continue
       if status_filter == "Đã làm" and not is_checked:
         continue
 
-      # 3. Lọc Loại sản phẩm (Đầu 4 / Đầu 5)
       clean_code = ma_tp.lstrip("0")
       if (
           filter_loai_sp == "Bán thành phẩm (Đầu 4)"
@@ -346,7 +316,6 @@ if not df_raw.empty:
       ):
         continue
 
-      # 4. Tìm kiếm từ khóa
       if search_kw.strip():
         kw = search_kw.strip().lower()
         if not (
@@ -358,11 +327,7 @@ if not df_raw.empty:
           "so_lot": so_lenh,
           "ma_vt": ma_tp,
           "ten_vt": ten_tp,
-          "ncc": (
-              f"Xưởng {phan_he}"
-              if phan_he
-              else "Xưởng Sản Xuất"
-          ),
+          "ncc": f"Xưởng {phan_he}" if phan_he else "Xưởng Sản Xuất",
           "ngay_ve": str(r.get("ngay_lenh_dt", r.get("ngay_lenh", ""))).split()[
               0
           ],
@@ -371,7 +336,6 @@ if not df_raw.empty:
           "is_checked": is_checked,
       })
 
-# danh sách thả xuống
 options_list = ["-- Chạm để chọn đối tượng nhập báo cáo --"] + [
     f"{'✅' if item['is_checked'] else '⏳'} Lô/Lệnh: {item['so_lot']} | Mã:"
     f" {item['ma_vt']} - {item['ten_vt']}"
@@ -442,6 +406,10 @@ if selected_opt != options_list[0]:
     if not nguoi_kiem_input.strip():
       st.error("❌ Vui lòng nhập Họ và tên Người kiểm tra!")
     else:
+      BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+      IMG_DIR = os.path.join(BASE_DIR, "Anh_kiem_tra_dau_vao")
+      os.makedirs(IMG_DIR, exist_ok=True)
+
       img1_path, img2_path = "", ""
       time_str = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -482,10 +450,10 @@ if selected_opt != options_list[0]:
                 img2_path,
             ),
         )
-        conn.commit()
+        if not USE_TURSO:
+          conn.commit()
         conn.close()
 
-        # Lưu lại tên vừa nhập thành công vào Session
         st.session_state["saved_inspector_name"] = nguoi_kiem_input.strip()
 
         st.success(
