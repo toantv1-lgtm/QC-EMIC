@@ -19,7 +19,7 @@ def get_db_connection():
   return conn
 
 
-# ================= 2. CẤU HÌNH GIAO DIỆN MOBILE =================
+# ================= 2. CẤU HÌNH GIAO DIỆN MOBILE TỐI ƯU =================
 st.set_page_config(
     page_title="EMIC QC Mobile Pro",
     page_icon="📱",
@@ -33,41 +33,34 @@ st.markdown(
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
     * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
     
-    .stApp { 
-        background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 50%, #F3E8FF 100%) !important; 
-    }
+    .stApp { background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 50%, #F3E8FF 100%) !important; }
     header, #MainMenu, footer { display: none !important; }
-    .block-container { padding: 0.8rem 0.6rem 3rem 0.6rem !important; max-width: 100% !important; }
+    .block-container { padding: 0.5rem 0.5rem 2rem 0.5rem !important; max-width: 100% !important; }
     
     .app-header {
         background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #EC4899 100%);
-        color: white; 
-        padding: 18px 15px; 
-        border-radius: 18px; 
-        text-align: center;
-        box-shadow: 0 10px 25px -5px rgba(124, 58, 237, 0.4); 
-        margin-bottom: 14px;
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white; padding: 12px 10px; border-radius: 14px; text-align: center;
+        box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3); margin-bottom: 10px;
     }
-    .emic-logo { font-size: 11px; font-weight: 900; letter-spacing: 2px; color: #FDE047; text-transform: uppercase; margin-bottom: 3px; }
-    .app-title { font-size: 19px; font-weight: 900; color: #FFFFFF; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    .emic-logo { font-size: 10px; font-weight: 900; letter-spacing: 1.5px; color: #FDE047; text-transform: uppercase; }
+    .app-title { font-size: 16px; font-weight: 900; color: #FFFFFF; }
 
+    /* Thu nhỏ kích thước ô nhập liệu trên điện thoại */
     .stTextInput input, .stSelectbox select, .stNumberInput input {
-        font-size: 13.5px !important; height: 44px !important; border-radius: 12px !important;
-        border: 2px solid #CBD5E1 !important; font-weight: 700 !important; background-color: #FFFFFF !important; color: #0F172A !important;
+        font-size: 13px !important; height: 40px !important; border-radius: 10px !important;
+        border: 1.5px solid #CBD5E1 !important; font-weight: 700 !important; background-color: #FFFFFF !important;
     }
-    label { font-size: 11.5px !important; color: #475569 !important; font-weight: 800 !important; text-transform: uppercase; }
+    label { font-size: 11px !important; color: #475569 !important; font-weight: 800 !important; margin-bottom: 2px !important; }
     
     div.stButton > button[kind="primary"] {
         background: linear-gradient(135deg, #FF416C 0%, #FF4B2B 100%) !important;
-        color: white !important; font-size: 16px !important; min-height: 52px !important;
-        border-radius: 14px !important; border: none !important; font-weight: 900 !important;
-        box-shadow: 0 8px 20px rgba(255, 75, 43, 0.4) !important;
+        color: white !important; font-size: 15px !important; min-height: 48px !important;
+        border-radius: 12px !important; border: none !important; font-weight: 900 !important;
     }
 
     .mobile-card {
-        background-color: #FFFFFF; padding: 14px; border-radius: 16px;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05); border: 1px solid #E2E8F0; margin-bottom: 12px;
+        background-color: #FFFFFF; padding: 10px; border-radius: 14px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); border: 1px solid #E2E8F0; margin-bottom: 8px;
     }
     </style>
 """,
@@ -132,7 +125,6 @@ def init_db():
             )
         """)
 
-    # Khởi tạo công việc con mặc định nếu chưa có
     cursor.execute("SELECT COUNT(*) FROM tb_dm_cong_viec")
     if cursor.fetchone()[0] == 0:
       default_tasks = [
@@ -221,7 +213,7 @@ init_db()
 if "saved_inspector_name" not in st.session_state:
   st.session_state["saved_inspector_name"] = get_last_inspector_name()
 
-# ================= 3. BỘ LỌC VÀ THÔNG TIN BÁO CÁO =================
+# ================= 3. KHU VỰC NHẬP TÊN VÀ CHỌN PHÂN HỆ =================
 st.markdown("<div class='mobile-card'>", unsafe_allow_html=True)
 
 nguoi_kiem_input = st.text_input(
@@ -233,7 +225,7 @@ if nguoi_kiem_input != st.session_state["saved_inspector_name"]:
   st.session_state["saved_inspector_name"] = nguoi_kiem_input
 
 loai_qc_option = st.radio(
-    "🎯 CHỌN PHÂN HỆ PHẠM VI KIỂM TRA:",
+    "🎯 CHỌN PHẠM VI KIỂM TRẢ:",
     ["📦 QC Đầu Vào (Vật tư)", "⚙️ QC Sản Xuất (Lệnh SX)"],
     horizontal=True,
 )
@@ -242,41 +234,39 @@ is_qc_dau_vao = "Vật tư" in loai_qc_option
 today = date.today()
 first_day_of_month = date(today.year, today.month, 1)
 
-col_d1, col_d2 = st.columns(2)
-with col_d1:
-  tu_date = st.date_input("Từ ngày:", first_day_of_month)
-with col_d2:
-  den_date = st.date_input("Đến ngày:", today)
+# GOM TOÀN BỘ BỘ LỌC PHỤ VÀO MỘT THẺ THU GỌN (THU GỌN 80% CHIỀU DÀI MÀN HÌNH)
+with st.expander("⚙️ BỘ LỌC THỜI GIAN & ĐIỀU KIỆN TÌM KIẾM", expanded=False):
+  col_d1, col_d2 = st.columns(2)
+  with col_d1:
+    tu_date = st.date_input("Từ ngày:", first_day_of_month)
+  with col_d2:
+    den_date = st.date_input("Đến ngày:", today)
 
-if is_qc_dau_vao:
-  col_flt1, col_flt2 = st.columns(2)
-  with col_flt1:
+  if is_qc_dau_vao:
     status_filter = st.selectbox(
         "Trạng thái kiểm:", ["Chưa kiểm", "Đã kiểm", "Tất cả"]
     )
-  with col_flt2:
-    search_kw = st.text_input(
-        "🔎 Tìm kiếm nhanh:", "", placeholder="Mã/Tên/Lot/NCC..."
-    )
-else:
-  col_f1, col_f2, col_f3 = st.columns(3)
-  with col_f1:
+    filter_xuong = "Tất cả"
+    filter_loai_sp = "Tất cả"
+  else:
     filter_xuong = st.selectbox(
         "Xưởng / Phân hệ:",
         ["Tất cả", "Cơ khí (3012)", "TU/TI (3011)", "Công tơ (3013, 3016)"],
     )
-  with col_f2:
     status_filter = st.selectbox(
         "Trạng thái làm:", ["Chưa làm", "Đã làm", "Tất cả"]
     )
-  with col_f3:
     filter_loai_sp = st.selectbox(
         "Loại sản phẩm:",
         ["Tất cả", "Bán thành phẩm (Đầu 4)", "Sản phẩm (Đầu 5)"],
     )
-  search_kw = st.text_input(
-      "🔎 Tìm kiếm nhanh:", "", placeholder="Số lệnh/Mã/Tên SP..."
-  )
+
+# TÌM KIẾM NHANH LUÔN HIỂN THỊ TRỰC TIẾP
+search_kw = st.text_input(
+    "🔎 TÌM KIẾM NHANH:",
+    "",
+    placeholder="Gõ Số Lệnh / Mã Hàng / Tên SP để lọc...",
+)
 
 st.markdown("</div>", unsafe_allow_html=True)
 
@@ -419,14 +409,14 @@ if not df_raw.empty:
           "is_checked": is_checked,
       })
 
-options_list = ["-- Chạm để chọn đối tượng nhập báo cáo --"] + [
+options_list = ["-- Chạm để chọn Lô/Lệnh hàng --"] + [
     f"{'✅' if item['is_checked'] else '⏳'} Lô/Lệnh: {item['so_lot']} | Mã:"
     f" {item['ma_vt']} - {item['ten_vt']}"
     for item in filtered_items
 ]
 
 selected_opt = st.selectbox(
-    "📋 DANH SÁCH ĐỐI TƯỢNG CẦN KIỂM TRẢ:", options_list, index=0
+    "📋 DANH SÁCH LÔ HÀNG TÌM ĐƯỢC:", options_list, index=0
 )
 
 # ================= 5. FORM NHẬP BÁO CÁO KẾT QUẢ =================
@@ -436,38 +426,34 @@ if selected_opt != options_list[0]:
 
   st.markdown(
       f"""
-    <div style="background-color:#FFFFFF; padding:16px; border-radius:18px; border:2px solid #C7D2FE; box-shadow:0 8px 20px rgba(99, 102, 241, 0.08); margin-bottom:14px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px dashed #E2E8F0; padding-bottom:10px; margin-bottom:12px;">
-            <span style="font-size:14px; font-weight:900; color:#4F46E5;">📌 {'LÔ VẬT TƯ' if is_qc_dau_vao else 'LỆNH SẢN XUẤT'}: {selected_item['so_lot']}</span>
+    <div style="background-color:#FFFFFF; padding:14px; border-radius:16px; border:2px solid #C7D2FE; margin-bottom:12px;">
+        <div style="border-bottom:2px dashed #E2E8F0; padding-bottom:6px; margin-bottom:8px;">
+            <span style="font-size:13.5px; font-weight:900; color:#4F46E5;">📌 {'LÔ VẬT TƯ' if is_qc_dau_vao else 'LỆNH SẢN XUẤT'}: {selected_item['so_lot']}</span>
         </div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:12px;">
-            <div><span style="color:#64748B; font-size:10px; font-weight:800; display:block;">MÃ HÀNG</span><b style="color:#0F172A; font-size:13px;">{selected_item['ma_vt']}</b></div>
-            <div><span style="color:#64748B; font-size:10px; font-weight:800; display:block;">NGÀY VỀ / LỆNH</span><b style="color:#0F172A; font-size:13px;">{selected_item['ngay_ve']}</b></div>
-            <div style="grid-column: span 2;"><span style="color:#64748B; font-size:10px; font-weight:800; display:block;">TÊN MẶT HÀNG</span><b style="color:#334155;">{selected_item['ten_vt']}</b></div>
-            <div style="grid-column: span 2;"><span style="color:#64748B; font-size:10px; font-weight:800; display:block;">ĐƠN VỊ / NCC / XƯỞNG</span><b style="color:#334155;">{selected_item['ncc']}</b></div>
-            <div style="background:linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); padding:6px 10px; border-radius:8px; border:1px solid #BFDBFE;"><span style="color:#1E40AF; font-size:10px; font-weight:800; display:block;">TỔNG SỐ LƯỢNG</span><b style="color:#1E3A8A; font-size:14px;">{selected_item['tong_sl']:,.0f}</b></div>
-            <div style="background:linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%); padding:6px 10px; border-radius:8px; border:1px solid #FECACA;"><span style="color:#991B1B; font-size:10px; font-weight:800; display:block;">SỐ MẪU KIỂM YÊU CẦU</span><b style="color:#7F1D1D; font-size:14px;">{selected_item['co_mau']:,.0f}</b></div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; font-size:11.5px;">
+            <div><span style="color:#64748B; font-size:9.5px; font-weight:800; display:block;">MÃ HÀNG</span><b style="color:#0F172A; font-size:12.5px;">{selected_item['ma_vt']}</b></div>
+            <div><span style="color:#64748B; font-size:9.5px; font-weight:800; display:block;">NGÀY VỀ/LỆNH</span><b style="color:#0F172A; font-size:12.5px;">{selected_item['ngay_ve']}</b></div>
+            <div style="grid-column: span 2;"><span style="color:#64748B; font-size:9.5px; font-weight:800; display:block;">TÊN MẶT HÀNG</span><b style="color:#334155;">{selected_item['ten_vt']}</b></div>
+            <div style="background:#EFF6FF; padding:5px 8px; border-radius:6px;"><span style="color:#1E40AF; font-size:9.5px; font-weight:800; display:block;">TỔNG SỐ LƯỢNG</span><b style="color:#1E3A8A; font-size:13px;">{selected_item['tong_sl']:,.0f}</b></div>
+            <div style="background:#FEF2F2; padding:5px 8px; border-radius:6px;"><span style="color:#991B1B; font-size:9.5px; font-weight:800; display:block;">SL MẪU KIỂM</span><b style="color:#7F1D1D; font-size:13px;">{selected_item['co_mau']:,.0f}</b></div>
         </div>
     </div>
     """,
       unsafe_allow_html=True,
   )
 
-  # BỔ SUNG Ô CHỌN CÔNG VIỆC CON / CÔNG ĐOẠN
   sub_task_list = get_sub_tasks(selected_item["phan_he"]) + [
       "Công việc khác / Nhập tay"
   ]
-  col_st1, col_st2 = st.columns([1.5, 1])
-  with col_st1:
-    sub_task_opt = st.selectbox(
-        "⚙️ CÔNG VIỆC CON / CÔNG ĐOẠN KIỂM:", sub_task_list
+  sub_task_opt = st.selectbox(
+      "⚙️ CÔNG VIỆC CON / CÔNG ĐOẠN KIỂM:", sub_task_list
+  )
+  if sub_task_opt == "Công việc khác / Nhập tay":
+    cong_viec_con_selected = st.text_input(
+        "Nhập tên công việc cụ thể:", placeholder="Gõ tên công việc..."
     )
-    if sub_task_opt == "Công việc khác / Nhập tay":
-      cong_viec_con_selected = st.text_input(
-          "Nhập tên công việc cụ thể:", placeholder="Gõ tên công việc..."
-      )
-    else:
-      cong_viec_con_selected = sub_task_opt
+  else:
+    cong_viec_con_selected = sub_task_opt
 
   col_q1, col_q2, col_q3 = st.columns(3)
   with col_q1:
@@ -480,17 +466,15 @@ if selected_opt != options_list[0]:
     sl_dat = max(0, sl_kiem - sl_khong_dat)
     st.number_input("SL ĐẠT:", value=int(sl_dat), disabled=True)
 
-  col_res1, col_res2 = st.columns(2)
-  with col_res1:
-    ket_luan = st.selectbox(
-        "📊 KẾT LUẬN:",
-        [
-            "Đạt tiêu chuẩn (UD 01)",
-            "Không đạt - Trả lại (UD 03)",
-            "Cho phép Đặc nhượng (UD 02)",
-        ],
-        index=0 if sl_khong_dat == 0 else 1,
-    )
+  ket_luan = st.selectbox(
+      "📊 KẾT LUẬN:",
+      [
+          "Đạt tiêu chuẩn (UD 01)",
+          "Không đạt - Trả lại (UD 03)",
+          "Cho phép Đặc nhượng (UD 02)",
+      ],
+      index=0 if sl_khong_dat == 0 else 1,
+  )
 
   defect_list = get_defect_types(selected_item["phan_he"]) + [
       "Lỗi khác / Nhập tay"
@@ -498,27 +482,24 @@ if selected_opt != options_list[0]:
   kieu_loi_selected = ""
 
   if sl_khong_dat > 0 or "Đạt tiêu chuẩn" not in ket_luan:
-    col_err1, col_err2 = st.columns(2)
-    with col_err1:
-      loai_loi_opt = st.selectbox(
-          "🚨 KIỂU SAI HỎNG / PHÂN LOẠI LỖI:", defect_list
+    loai_loi_opt = st.selectbox(
+        "🚨 KIỂU SAI HỎNG / PHÂN LOẠI LỖI:", defect_list
+    )
+    if loai_loi_opt == "Lỗi khác / Nhập tay":
+      kieu_loi_selected = st.text_input(
+          "Tên lỗi cụ thể:", placeholder="Gõ mô tả lỗi ngắn..."
       )
-      if loai_loi_opt == "Lỗi khác / Nhập tay":
-        kieu_loi_selected = st.text_input(
-            "Tên lỗi cụ thể:", placeholder="Gõ mô tả lỗi ngắn..."
-        )
-      else:
-        kieu_loi_selected = loai_loi_opt
+    else:
+      kieu_loi_selected = loai_loi_opt
 
-  with col_res2:
-    ghi_chu = st.text_input("📝 GHI CHÚ BỔ SUNG:", placeholder="Mô tả chi tiết lỗi...")
+  ghi_chu = st.text_input("📝 GHI CHÚ BỔ SUNG:", placeholder="Mô tả chi tiết lỗi...")
 
   st.markdown("<hr style='border-color:#CBD5E1;'>", unsafe_allow_html=True)
   img_col1, img_col2 = st.columns(2)
   with img_col1:
-    img1_file = st.file_uploader("📷 Chụp / Tải Ảnh 1", type=["png", "jpg", "jpeg"])
+    img1_file = st.file_uploader("📷 Chụp/Up Ảnh 1", type=["png", "jpg", "jpeg"])
   with img_col2:
-    img2_file = st.file_uploader("📷 Chụp / Tải Ảnh 2", type=["png", "jpg", "jpeg"])
+    img2_file = st.file_uploader("📷 Chụp/Up Ảnh 2", type=["png", "jpg", "jpeg"])
 
   if st.button("🚀 GỬI BÁO CÁO VỀ HỆ THỐNG", type="primary", use_container_width=True):
     if not nguoi_kiem_input.strip():
@@ -570,7 +551,6 @@ if selected_opt != options_list[0]:
         conn.close()
 
         st.session_state["saved_inspector_name"] = nguoi_kiem_input.strip()
-
         st.success(
             f"🎉 Đã gửi báo cáo QC thành công cho Lô/Lệnh {selected_item['so_lot']}!"
         )
