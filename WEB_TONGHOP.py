@@ -24,7 +24,6 @@ os.makedirs(IMG_DIR, exist_ok=True)
 
 
 def get_db_connection():
-  # Xử lý an toàn kiểm tra st.secrets tránh lỗi StreamlitSecretNotFoundError khi chạy local
   try:
     USE_TURSO = "TURSO_DATABASE_URL" in st.secrets
   except Exception:
@@ -49,7 +48,6 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Bảng nhật ký kiểm tra QC
     cursor.execute("""
             CREATE TABLE IF NOT EXISTS tb_qc_dau_vao (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,7 +59,6 @@ def init_db():
             )
         """)
 
-    # Tự động cập nhật cột loai_qc, kieu_loi và cong_viec_con nếu CSDL cũ chưa có
     cursor.execute("PRAGMA table_info(tb_qc_dau_vao)")
     cols = [col[1] for col in cursor.fetchall()]
     if "loai_qc" not in cols:
@@ -77,7 +74,6 @@ def init_db():
           "ALTER TABLE tb_qc_dau_vao ADD COLUMN cong_viec_con TEXT DEFAULT ''"
       )
 
-    # Bảng danh mục loại lỗi
     cursor.execute("""
             CREATE TABLE IF NOT EXISTS tb_dm_loai_loi (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,7 +82,6 @@ def init_db():
             )
         """)
 
-    # Bảng danh mục công việc con theo xưởng
     cursor.execute("""
             CREATE TABLE IF NOT EXISTS tb_dm_cong_viec (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -103,7 +98,7 @@ def init_db():
 
 init_db()
 
-# ================= 2. CẤU HÌNH DASHBOARD & HỆ THỐNG THIẾT KẾ GỐC =================
+# ================= 2. CẤU HÌNH DASHBOARD & HỆ THỐNG THIẾT KẾ =================
 st.set_page_config(
     page_title="EMIC QC Dashboard Tổng Hợp",
     page_icon="📊",
@@ -437,7 +432,7 @@ def load_data(tu_date, den_date):
     return pd.DataFrame(), pd.DataFrame()
 
 
-# ================= 3. HÀM TẠO EXCEL ĐÍNH KÈM HÌNH ẢNH SẮC NÉT =================
+# ================= 3. HÀM TẠO EXCEL BÁO CÁO =================
 def generate_print_ready_excel(
     phan_he_code,
     title_clean,
@@ -648,7 +643,7 @@ tab_vat_tu, tab_co_khi, tab_tuti, tab_cong_to, tab_danh_sach = st.tabs([
     "🔍 Danh Sách Chi Tiết & Năng Suất",
 ])
 
-# ================= 6. TAB 1: BÁO CÁO VẬT TƯ =================
+# ================= 6. TAB 1: BÁO CÁO VẬT TƯ (NGUYÊN BẢN CÓ ĐỦ BIỂU ĐỒ) =================
 with tab_vat_tu:
   if df_qa32.empty:
     st.info("💡 Chưa có dữ liệu QA32 trong khoảng thời gian đã chọn.")
@@ -1135,14 +1130,32 @@ def render_coois_tab_layout(phan_he_code, title_text):
   except Exception:
     df_qc_sub = pd.DataFrame()
 
+  # Nhận diện an toàn cột chứa Số lệnh sản xuất (so_lenh hoặc lenh_sx)
+  col_order = (
+      "so_lenh"
+      if "so_lenh" in df_sub.columns
+      else ("lenh_sx" if "lenh_sx" in df_sub.columns else "")
+  )
+
   # Ghép nối Lô/Lệnh COOIS với Dòng sản phẩm (mat_prefix)
   if not df_qc_sub.empty and not df_sub.empty:
-    order_map = dict(
-        zip(df_sub["so_lenh"].astype(str), df_sub["mat_prefix"].astype(str))
-    )
-    code_map = dict(
-        zip(df_sub["ma_tp"].astype(str), df_sub["mat_prefix"].astype(str))
-    )
+    if col_order and "mat_prefix" in df_sub.columns:
+      order_map = dict(
+          zip(df_sub[col_order].astype(str), df_sub["mat_prefix"].astype(str))
+      )
+      allowed_orders = set(df_sub[col_order].astype(str).unique())
+    else:
+      order_map = {}
+      allowed_orders = set()
+
+    if "ma_tp" in df_sub.columns and "mat_prefix" in df_sub.columns:
+      code_map = dict(
+          zip(df_sub["ma_tp"].astype(str), df_sub["mat_prefix"].astype(str))
+      )
+      allowed_codes = set(df_sub["ma_tp"].astype(str).unique())
+    else:
+      code_map = {}
+      allowed_codes = set()
 
     df_qc_sub["mat_prefix"] = df_qc_sub["so_lot"].astype(str).map(order_map)
     df_qc_sub["mat_prefix"] = (
@@ -1151,8 +1164,6 @@ def render_coois_tab_layout(phan_he_code, title_text):
         .fillna("Khác")
     )
 
-    allowed_orders = set(df_sub["so_lenh"].astype(str).unique())
-    allowed_codes = set(df_sub["ma_tp"].astype(str).unique())
     df_qc_sub = df_qc_sub[
         df_qc_sub["so_lot"].astype(str).isin(allowed_orders)
         | df_qc_sub["ma_vt"].astype(str).isin(allowed_codes)
@@ -1295,7 +1306,6 @@ def render_coois_tab_layout(phan_he_code, title_text):
 
     fig1.update_layout(
         barmode="stack",
-        bargap=0.35,
         margin=dict(l=30, r=20, t=8, b=55),
         height=PLOT_HEIGHT,
         paper_bgcolor="#FFFFFF",
@@ -1897,7 +1907,7 @@ def render_coois_tab_layout(phan_he_code, title_text):
     )
 
 
-# ================= 8. RENDER NỘI DUNG CÁC TAB BÁO CÁO COOIS =================
+# ================= 8. RENDER CÁC TAB COOIS MÀN HÌNH =================
 with tab_co_khi:
   render_coois_tab_layout("CO_KHI", "⚙️ BÁO CÁO CƠ KHÍ (LỆNH 3012)")
 with tab_tuti:
@@ -2170,12 +2180,18 @@ with tab_danh_sach:
 
       if search_keyword_l.strip():
         kw = search_keyword_l.strip().lower()
+        col_order_check = (
+            "so_lenh"
+            if "so_lenh" in df_coois_view.columns
+            else ("lenh_sx" if "lenh_sx" in df_coois_view.columns else "")
+        )
+
         m1 = (
-            df_coois_view["so_lenh"]
+            df_coois_view[col_order_check]
             .astype(str)
             .str.lower()
             .str.contains(kw, na=False)
-            if "so_lenh" in df_coois_view.columns
+            if col_order_check
             else False
         )
         m2 = (
@@ -2197,15 +2213,18 @@ with tab_danh_sach:
         df_coois_view = df_coois_view[m1 | m2 | m3]
 
       if not df_coois_view.empty:
+        col_order_disp = (
+            "so_lenh"
+            if "so_lenh" in df_coois_view.columns
+            else ("lenh_sx" if "lenh_sx" in df_coois_view.columns else "")
+        )
         df_lenh_display = pd.DataFrame()
         df_lenh_display["STT"] = np.arange(1, len(df_coois_view) + 1)
         df_lenh_display["Ngày tháng năm"] = df_coois_view[
             "ngay_lenh_format"
         ].values
         df_lenh_display["Lệnh"] = (
-            df_coois_view["so_lenh"].values
-            if "so_lenh" in df_coois_view.columns
-            else ""
+            df_coois_view[col_order_disp].values if col_order_disp else ""
         )
         df_lenh_display["Mã sản phẩm"] = (
             df_coois_view["ma_tp"].values
