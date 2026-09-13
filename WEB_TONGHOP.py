@@ -24,7 +24,6 @@ os.makedirs(IMG_DIR, exist_ok=True)
 
 
 def get_db_connection():
-  # Xử lý an toàn kiểm tra st.secrets tránh lỗi StreamlitSecretNotFoundError khi chạy local
   try:
     USE_TURSO = "TURSO_DATABASE_URL" in st.secrets
   except Exception:
@@ -49,7 +48,6 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Bảng nhật ký kiểm tra QC
     cursor.execute("""
             CREATE TABLE IF NOT EXISTS tb_qc_dau_vao (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,7 +59,6 @@ def init_db():
             )
         """)
 
-    # Tự động cập nhật cột loai_qc, kieu_loi và cong_viec_con nếu CSDL cũ chưa có
     cursor.execute("PRAGMA table_info(tb_qc_dau_vao)")
     cols = [col[1] for col in cursor.fetchall()]
     if "loai_qc" not in cols:
@@ -77,7 +74,6 @@ def init_db():
           "ALTER TABLE tb_qc_dau_vao ADD COLUMN cong_viec_con TEXT DEFAULT ''"
       )
 
-    # Bảng danh mục loại lỗi
     cursor.execute("""
             CREATE TABLE IF NOT EXISTS tb_dm_loai_loi (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,7 +82,6 @@ def init_db():
             )
         """)
 
-    # Bảng danh mục công việc con theo xưởng
     cursor.execute("""
             CREATE TABLE IF NOT EXISTS tb_dm_cong_viec (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -103,7 +98,7 @@ def init_db():
 
 init_db()
 
-# ================= 2. CẤU HÌNH DASHBOARD & HỆ THỐNG THIẾT KẾ GỐC =================
+# ================= 2. CẤU HÌNH DASHBOARD & HỆ THỐNG THIẾT KẾ =================
 st.set_page_config(
     page_title="EMIC QC Dashboard Tổng Hợp",
     page_icon="📊",
@@ -648,7 +643,7 @@ tab_vat_tu, tab_co_khi, tab_tuti, tab_cong_to, tab_danh_sach = st.tabs([
     "🔍 Danh Sách Chi Tiết & Năng Suất",
 ])
 
-# ================= 6. TAB 1: BÁO CÁO VẬT TƯ (NGUYÊN BẢN CÓ ĐỦ BIỂU ĐỒ) =================
+# ================= 6. TAB 1: BÁO CÁO VẬT TƯ =================
 with tab_vat_tu:
   if df_qa32.empty:
     st.info("💡 Chưa có dữ liệu QA32 trong khoảng thời gian đã chọn.")
@@ -934,7 +929,10 @@ with tab_vat_tu:
       )
 
       st.plotly_chart(
-          fig1, use_container_width=True, config={"displayModeBar": False}
+          fig1,
+          use_container_width=True,
+          config={"displayModeBar": False},
+          key="vt_chart_fig1",
       )
       chart_card_close()
 
@@ -993,7 +991,10 @@ with tab_vat_tu:
           ],
       )
       st.plotly_chart(
-          fig2, use_container_width=True, config={"displayModeBar": False}
+          fig2,
+          use_container_width=True,
+          config={"displayModeBar": False},
+          key="vt_chart_fig2",
       )
       chart_card_close()
 
@@ -1058,6 +1059,7 @@ with tab_vat_tu:
               fig_sup,
               use_container_width=True,
               config={"displayModeBar": False},
+              key="vt_chart_fig_sup",
           )
           chart_card_close()
 
@@ -1103,7 +1105,7 @@ with tab_vat_tu:
       st.success("🎉 Không có vật tư nào bị Block hoặc UD 02, 03")
 
 
-# ================= 7. HÀM COOIS CÓ ĐỦ BIỂU ĐỒ VÀ XUẤT EXCEL (NGUYÊN BẢN GỐC) =================
+# ================= 7. HÀM COOIS CÓ ĐỦ BIỂU ĐỒ VÀ XUẤT EXCEL (ĐÃ CÓ KEY DUY NHẤT) =================
 def render_coois_tab_layout(phan_he_code, title_text):
   df_sub = (
       df_coois[df_coois["phan_he"] == phan_he_code]
@@ -1287,7 +1289,10 @@ def render_coois_tab_layout(phan_he_code, title_text):
     )
 
     st.plotly_chart(
-        fig1, use_container_width=True, config={"displayModeBar": False}
+        fig1,
+        use_container_width=True,
+        config={"displayModeBar": False},
+        key=f"coois_fig1_{phan_he_code}",
     )
     chart_card_close()
 
@@ -1344,7 +1349,10 @@ def render_coois_tab_layout(phan_he_code, title_text):
         ],
     )
     st.plotly_chart(
-        fig2, use_container_width=True, config={"displayModeBar": False}
+        fig2,
+        use_container_width=True,
+        config={"displayModeBar": False},
+        key=f"coois_fig2_{phan_he_code}",
     )
     chart_card_close()
 
@@ -1433,7 +1441,10 @@ def render_coois_tab_layout(phan_he_code, title_text):
     )
 
     st.plotly_chart(
-        fig3, use_container_width=True, config={"displayModeBar": False}
+        fig3,
+        use_container_width=True,
+        config={"displayModeBar": False},
+        key=f"coois_fig3_{phan_he_code}",
     )
     chart_card_close()
 
@@ -1506,7 +1517,10 @@ def render_coois_tab_layout(phan_he_code, title_text):
     )
 
     st.plotly_chart(
-        fig4, use_container_width=True, config={"displayModeBar": False}
+        fig4,
+        use_container_width=True,
+        config={"displayModeBar": False},
+        key=f"coois_fig4_{phan_he_code}",
     )
     chart_card_close()
 
@@ -1761,7 +1775,7 @@ def render_coois_tab_layout(phan_he_code, title_text):
     )
 
 
-# ================= 8. TAB 2, 3, 4 RENDER TƯƠNG ỨNG TỪ COOIS =================
+# ================= 8. RENDER CÁC TAB COOIS MÀN HÌNH =================
 with tab_co_khi:
   render_coois_tab_layout("CO_KHI", "⚙️ BÁO CÁO CƠ KHÍ (LỆNH 3012)")
 with tab_tuti:
@@ -2421,7 +2435,11 @@ with tab_danh_sach:
                   paper_bgcolor="#FFFFFF",
                   plot_bgcolor="#FFFFFF",
               )
-              st.plotly_chart(fig_err, use_container_width=True)
+              st.plotly_chart(
+                  fig_err,
+                  use_container_width=True,
+                  key="sh_chart_fig_err",
+              )
 
           st.markdown("##### 📋 Danh Sách Ca Báo Lỗi Chi Tiết")
           df_sh_display = df_sh_view[[
@@ -2504,11 +2522,3 @@ with tab_danh_sach:
           st.dataframe(df_dm_loi, use_container_width=True, hide_index=True)
       except Exception as ex:
         st.error(f"Lỗi nạp danh mục loại lỗi: {ex}")
-
-# ================= 10. RENDER NỘI DUNG CÁC TAB BÁO CÁO COOIS =================
-with tab_co_khi:
-  render_coois_tab_layout("CO_KHI", "⚙️ BÁO CÁO CƠ KHÍ (LỆNH 3012)")
-with tab_tuti:
-  render_coois_tab_layout("TU_TI", "🔌 BÁO CÁO TUTI (LỆNH 3011)")
-with tab_cong_to:
-  render_coois_tab_layout("CONG_TO", "⚡ BÁO CÁO CÔNG TƠ (LỆNH 3013, 3016)")
