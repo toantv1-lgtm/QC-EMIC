@@ -22,45 +22,107 @@ def get_db_connection():
   return conn
 
 
-# ================= 2. CẤU HÌNH GIAO DIỆN STREAMLIT MOBILE =================
+# ================= 2. CẤU HÌNH GIAO DIỆN STREAMLIT MOBILE NỔI BẬT & SẶC SỠ =================
 st.set_page_config(
-    page_title="EMIC QC Đầu Vào Mobile",
+    page_title="EMIC QC Mobile Pro",
     page_icon="📱",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
+# Style CSS tùy biến giao diện sặc sỡ, chuyên nghiệp
 st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
     * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
-    .stApp { background-color: #F0F4F8; }
+    
+    .stApp { 
+        background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 50%, #F3E8FF 100%) !important; 
+    }
     header, #MainMenu, footer { display: none !important; }
-    .block-container { padding: 1rem 0.6rem 3rem 0.6rem !important; max-width: 100% !important; }
+    .block-container { padding: 0.8rem 0.6rem 3rem 0.6rem !important; max-width: 100% !important; }
     
+    /* Vibrant Header Gradient */
     .app-header {
-        background: linear-gradient(135deg, #1E1B4B 0%, #3B82F6 100%);
-        color: white; padding: 18px 15px; border-radius: 16px; text-align: center;
-        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25); margin-bottom: 16px;
+        background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #EC4899 100%);
+        color: white; 
+        padding: 20px 16px; 
+        border-radius: 20px; 
+        text-align: center;
+        box-shadow: 0 10px 25px -5px rgba(124, 58, 237, 0.4); 
+        margin-bottom: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
     }
-    .emic-logo { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: #93C5FD; text-transform: uppercase; }
-    .app-title { font-size: 18px; font-weight: 900; color: #FFFFFF; }
+    .emic-logo { 
+        font-size: 11px; 
+        font-weight: 900; 
+        letter-spacing: 2px; 
+        color: #FDE047; 
+        text-transform: uppercase; 
+        margin-bottom: 4px;
+    }
+    .app-title { 
+        font-size: 20px; 
+        font-weight: 900; 
+        color: #FFFFFF; 
+        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
 
+    /* Input Controls Custom */
     .stTextInput input, .stSelectbox select, .stNumberInput input {
-        font-size: 13px !important; height: 44px !important; border-radius: 12px !important;
-        border: 1.5px solid #E2E8F0 !important; font-weight: 600 !important;
+        font-size: 13.5px !important; 
+        height: 46px !important; 
+        border-radius: 12px !important;
+        border: 2px solid #CBD5E1 !important; 
+        font-weight: 700 !important;
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
     }
-    label { font-size: 11px !important; color: #64748B !important; font-weight: 800 !important; text-transform: uppercase; }
+    .stTextInput input:focus, .stSelectbox select:focus {
+        border-color: #7C3AED !important;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2) !important;
+    }
+    label { 
+        font-size: 11.5px !important; 
+        color: #475569 !important; 
+        font-weight: 800 !important; 
+        text-transform: uppercase; 
+        letter-spacing: 0.5px;
+    }
     
+    /* Vibrant Action Button */
     div.stButton > button[kind="primary"] {
-        background: linear-gradient(135deg, #FF512F 0%, #DD2476 100%) !important;
-        color: white !important; font-size: 15px !important; min-height: 52px !important;
-        border-radius: 12px !important; border: none !important; font-weight: 800 !important;
+        background: linear-gradient(135deg, #FF416C 0%, #FF4B2B 100%) !important;
+        color: white !important; 
+        font-size: 16px !important; 
+        min-height: 54px !important;
+        border-radius: 14px !important; 
+        border: none !important; 
+        font-weight: 900 !important;
+        letter-spacing: 0.5px;
+        box-shadow: 0 8px 20px rgba(255, 75, 43, 0.4) !important;
+        transition: all 0.2s ease !important;
     }
+    div.stButton > button[kind="primary"]:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 12px 25px rgba(255, 75, 43, 0.5) !important;
+    }
+
+    /* Cards */
     .mobile-card {
-        background-color: #FFFFFF; padding: 14px; border-radius: 16px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04); border: 1px solid #E2E8F0; margin-bottom: 14px;
+        background-color: #FFFFFF; 
+        padding: 16px; 
+        border-radius: 18px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05); 
+        border: 1px solid #E2E8F0; 
+        margin-bottom: 14px;
+    }
+    
+    /* Custom Badges */
+    .badge-label {
+        background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);
+        color: white; padding: 3px 8px; border-radius: 6px; font-weight: 800; font-size: 11px;
     }
     </style>
 """,
@@ -70,8 +132,8 @@ st.markdown(
 st.markdown(
     """
     <div class='app-header'>
-        <div class='emic-logo'>🏢 EMIC - PHÒNG QUẢN LÝ CHẤT LƯỢNG</div>
-        <div class='app-title'>BÁO CÁO QC ĐẦU VÀO MOBILE</div>
+        <div class='emic-logo'>⚡ EMIC - QUALITY CONTROL SYSTEM</div>
+        <div class='app-title'>📱 BÁO CÁO QC ĐẦU VÀO MOBILE PRO</div>
     </div>
 """,
     unsafe_allow_html=True,
@@ -97,24 +159,60 @@ def init_db():
     pass
 
 
+def get_last_inspector():
+  """Tự động truy vấn lấy tên người kiểm tra từ lượt nhập gần đây nhất"""
+  try:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT nguoi_kiem FROM tb_qc_dau_vao WHERE nguoi_kiem IS NOT NULL AND"
+        " nguoi_kiem != '' ORDER BY id DESC LIMIT 1"
+    )
+    row = cursor.fetchone()
+    conn.close()
+    if row and row["nguoi_kiem"]:
+      return row["nguoi_kiem"]
+  except Exception:
+    pass
+  return "Nguyễn Thị Lý"
+
+
 init_db()
+
+# Lấy tên người kiểm trước đó
+last_inspector = get_last_inspector()
 
 # ================= 3. BỘ LỌC NGƯỜI KIỂM VÀ TRẠNG THÁI =================
 st.markdown("<div class='mobile-card'>", unsafe_allow_html=True)
-col_top1, col_top2 = st.columns([1.2, 1])
+col_top1, col_top2 = st.columns([1.3, 1])
+
+inspector_list = [
+    "Nguyễn Thị Lý",
+    "Nguyễn Văn A",
+    "Trần Thị B",
+    "Nguyễn Mạnh Long",
+    "Khác",
+]
+default_idx = (
+    inspector_list.index(last_inspector)
+    if last_inspector in inspector_list
+    else (len(inspector_list) - 1)
+)
 
 with col_top1:
-  inspector_list = [
-      "Nguyễn Thị Lý",
-      "Nguyễn Văn A",
-      "Trần Thị B",
-      "Nguyễn Mạnh Long",
-      "Khác",
-  ]
-  nguoi_kiem_selected = st.selectbox("👤 NGƯỜI KIỂM TRA:", inspector_list, index=0)
+  nguoi_kiem_selected = st.selectbox(
+      "👤 NGƯỜI KIỂM (TỰ NHỚ LẦN TRƯỚC):",
+      inspector_list,
+      index=default_idx,
+  )
   if nguoi_kiem_selected == "Khác":
+    custom_default = (
+        last_inspector if last_inspector not in inspector_list else ""
+    )
     nguoi_kiem_final = st.text_input(
-        "Họ tên người kiểm:", value="", placeholder="Gõ tên..."
+        "Họ tên người kiểm:",
+        value=custom_default,
+        placeholder="Nhập tên người kiểm...",
     )
   else:
     nguoi_kiem_final = nguoi_kiem_selected
@@ -215,17 +313,17 @@ if selected_opt != options_list[0]:
 
   st.markdown(
       f"""
-    <div style="background-color:#FFFFFF; padding:14px; border-radius:16px; border:1px solid #E2E8F0; margin-bottom:14px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px dashed #E2E8F0; padding-bottom:8px; margin-bottom:10px;">
-            <span style="font-size:13px; font-weight:900; color:#1E293B;">📦 LÔ HÀNG: {selected_lot['so_lot']}</span>
+    <div style="background-color:#FFFFFF; padding:16px; border-radius:18px; border:2px solid #C7D2FE; box-shadow:0 8px 20px rgba(99, 102, 241, 0.08); margin-bottom:14px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px dashed #E2E8F0; padding-bottom:10px; margin-bottom:12px;">
+            <span style="font-size:14px; font-weight:900; color:#4F46E5;">📦 LÔ HÀNG: {selected_lot['so_lot']}</span>
         </div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; font-size:12px;">
-            <div><span style="color:#64748B; font-size:10px; font-weight:800; display:block;">MÃ VT</span><b>{selected_lot['ma_vt']}</b></div>
-            <div><span style="color:#64748B; font-size:10px; font-weight:800; display:block;">BV</span><b>{selected_lot['ky_hieu_bv']}</b></div>
-            <div><span style="color:#64748B; font-size:10px; font-weight:800; display:block;">TÊN VT</span><b>{selected_lot['ten_vt'][:25]}</b></div>
-            <div><span style="color:#64748B; font-size:10px; font-weight:800; display:block;">NCC</span><b>{selected_lot['ncc'][:20]}</b></div>
-            <div style="background:#F1F5F9; padding:4px; border-radius:6px;">TỔNG VỀ: <b>{selected_lot['tong_sl']:,.0f}</b></div>
-            <div style="background:#FFF1F2; padding:4px; border-radius:6px;">MẪU BY: <b>{selected_lot['co_mau']:,.0f}</b></div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:12px;">
+            <div><span style="color:#64748B; font-size:10px; font-weight:800; display:block;">MÃ VT</span><b style="color:#0F172A; font-size:13px;">{selected_lot['ma_vt']}</b></div>
+            <div><span style="color:#64748B; font-size:10px; font-weight:800; display:block;">BẢN VẼ</span><b style="color:#0F172A; font-size:13px;">{selected_lot['ky_hieu_bv']}</b></div>
+            <div><span style="color:#64748B; font-size:10px; font-weight:800; display:block;">TÊN VT</span><b style="color:#334155;">{selected_lot['ten_vt'][:25]}</b></div>
+            <div><span style="color:#64748B; font-size:10px; font-weight:800; display:block;">NHÀ CUNG CẤP</span><b style="color:#334155;">{selected_lot['ncc'][:20]}</b></div>
+            <div style="background:linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); padding:6px 10px; border-radius:8px; border:1px solid #BFDBFE;"><span style="color:#1E40AF; font-size:10px; font-weight:800; display:block;">TỔNG VỀ</span><b style="color:#1E3A8A; font-size:14px;">{selected_lot['tong_sl']:,.0f}</b></div>
+            <div style="background:linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%); padding:6px 10px; border-radius:8px; border:1px solid #FECACA;"><span style="color:#991B1B; font-size:10px; font-weight:800; display:block;">MẪU KIỂM (BY)</span><b style="color:#7F1D1D; font-size:14px;">{selected_lot['co_mau']:,.0f}</b></div>
         </div>
     </div>
     """,
@@ -253,12 +351,12 @@ if selected_opt != options_list[0]:
   with col_res2:
     ghi_chu = st.text_input("📝 GHI CHÚ:", placeholder="Nhập mô tả lỗi...")
 
-  st.markdown("<hr>", unsafe_allow_html=True)
+  st.markdown("<hr style='border-color:#CBD5E1;'>", unsafe_allow_html=True)
   img_col1, img_col2 = st.columns(2)
   with img_col1:
-    img1_file = st.file_uploader("📷 Up Ảnh 1", type=["png", "jpg", "jpeg"])
+    img1_file = st.file_uploader("📷 Chụp/Up Ảnh 1", type=["png", "jpg", "jpeg"])
   with img_col2:
-    img2_file = st.file_uploader("📷 Up Ảnh 2", type=["png", "jpg", "jpeg"])
+    img2_file = st.file_uploader("📷 Chụp/Up Ảnh 2", type=["png", "jpg", "jpeg"])
 
   if st.button("🚀 GỬI BÁO CÁO VỀ HỆ THỐNG", type="primary", use_container_width=True):
     if not nguoi_kiem_final.strip():
