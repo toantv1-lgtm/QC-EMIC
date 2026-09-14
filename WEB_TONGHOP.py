@@ -15,7 +15,131 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
 
-# ================= 1. KẾT NỐI CSDL AN TOÀN & TỰ ĐỘNG CẬP NHẬT CẤU TRÚC =================
+# ================= 1. CẤU HÌNH GIAO DIỆN & PAGE CONFIG =================
+st.set_page_config(
+    page_title="EMIC - Dashboard Tổng Hợp",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+    
+    /* Đồng bộ Font chữ toàn cục */
+    * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
+    
+    .stApp { 
+        background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 50%, #F3E8FF 100%) !important; 
+    }
+    header, #MainMenu, footer { display: none !important; }
+    
+    /* Ép full màn hình tuyệt đối giống webbaoca */
+    .block-container { 
+        padding: 0.8rem 0.6rem 3rem 0.6rem !important; 
+        max-width: 100% !important; 
+        width: 100% !important;
+    }
+    
+    /* Header giống webbaoca */
+    .app-header {
+        background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 50%, #1E3A8A 100%);
+        color: white; 
+        padding: 18px 15px; 
+        border-radius: 18px; 
+        text-align: center;
+        box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.45); 
+        margin-bottom: 22px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .emic-logo { font-size: 11px; font-weight: 900; letter-spacing: 2px; color: #FDE047; text-transform: uppercase; margin-bottom: 3px; }
+    .app-title { font-size: 19px; font-weight: 900; color: #FFFFFF; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    .app-meta { font-size: 12.5px; color: #E2E8F0; margin-top: 5px; font-weight: 600; }
+
+    /* CSS cho các thành phần Dashboard giữ nguyên 100% như cũ */
+    :root {
+        --bg: #F5F6F9;
+        --surface: #FFFFFF;
+        --border: #E6E9F0;
+        --border-strong: #D6DAE5;
+        --text: #0F1222;
+        --text-muted: #6B7280;
+        --primary: #4F46E5;
+        --primary-soft: #EEF0FF;
+        --success: #0EA968;
+        --danger: #E23D4D;
+        --warning: #EA8A0A;
+        --purple: #9333EA;
+        --radius: 14px;
+        --radius-sm: 10px;
+        --shadow: 0 1px 3px rgba(15,18,34,0.05), 0 6px 16px -6px rgba(15,18,34,0.08);
+        --shadow-hover: 0 8px 24px -6px rgba(15,18,34,0.14);
+    }
+    
+    .filter-banner {
+        background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+        padding: 16px 22px; box-shadow: var(--shadow); margin-bottom: 22px;
+    }
+    .filter-banner .filter-title {
+        font-size: 13px; font-weight: 700; color: var(--text-muted);
+        text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px;
+        display: flex; align-items: center; gap: 6px;
+    }
+
+    [data-testid="stSidebar"] {
+        background-color: var(--surface) !important; border-right: 1px solid var(--border);
+    }
+    [data-testid="stSidebar"] div[role="radiogroup"] > label {
+        padding: 10px 14px; background: transparent; border-radius: 10px; margin-bottom: 5px;
+        transition: all 0.2s ease; cursor: pointer; border: 1px solid transparent;
+    }
+    [data-testid="stSidebar"] div[role="radiogroup"] > label:hover { background: #EEF1FA; }
+    [data-testid="stSidebar"] div[role="radiogroup"] > label[data-baseweb="radio"] div:first-child { display: none !important; }
+    [data-testid="stSidebar"] div[role="radiogroup"] p { font-weight: 700 !important; font-size: 14px !important; color: #475569; margin: 0; }
+    [data-testid="stSidebar"] div[role="radiogroup"] > label[aria-checked="true"] {
+        background: #EEF2FF; border-left: 5px solid #4F46E5; border-radius: 4px 10px 10px 4px;
+    }
+    [data-testid="stSidebar"] div[role="radiogroup"] > label[aria-checked="true"] p { color: #4F46E5 !important; }
+
+    .stTabs [data-baseweb="tab-list"] { gap: 20px !important; background-color: transparent !important; padding: 0px !important; border-bottom: 1px solid var(--border) !important; margin-bottom: 22px !important; }
+    .stTabs [data-baseweb="tab"] { background-color: transparent !important; color: var(--text-muted) !important; padding: 4px 2px 13px 2px !important; border: none !important; border-bottom: 2.5px solid transparent !important; font-weight: 600 !important; font-size: 14.5px !important; }
+    .stTabs [aria-selected="true"] { color: var(--primary) !important; border-bottom: 2.5px solid var(--primary) !important; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+    .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); position: relative; overflow: hidden; transition: transform 0.18s ease; }
+    .kpi-card:hover { transform: translateY(-2px); }
+    .kpi-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--accent, var(--primary)); }
+    .kpi-card .kpi-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .kpi-card .kpi-label { font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .kpi-card .kpi-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; background: var(--accent-soft, var(--primary-soft)); }
+    .kpi-card .kpi-value { font-size: 27px; font-weight: 800; color: var(--text); }
+    .kpi-card .kpi-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 6px; font-weight: 500; }
+
+    .chart-card { background-color: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 18px 22px 10px 22px; box-shadow: var(--shadow); margin-bottom: 20px; }
+    .chart-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+    .chart-card-title { font-size: 15.5px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .chart-card-title::before { content: ""; width: 4px; height: 15px; border-radius: 2px; background: var(--primary); display: inline-block; }
+    .chart-card-caption { font-size: 11px; color: var(--text-muted); font-weight: 600; background: var(--bg); padding: 3px 9px; border-radius: 999px; }
+
+    .section-heading { font-size: 16.5px; font-weight: 800; color: var(--text); margin: 6px 0 14px 2px; }
+
+    div[data-testid="stDataFrame"] { border: 1px solid var(--border) !important; border-radius: var(--radius) !important; box-shadow: var(--shadow); overflow: hidden; }
+    [data-testid="stWidgetLabel"] p { font-size: 12px !important; font-weight: 700 !important; color: var(--text-muted) !important; text-transform: uppercase; }
+    div[data-baseweb="select"] > div, .stDateInput input, .stTextInput input { border-radius: var(--radius-sm) !important; border-color: var(--border) !important; font-weight: 600 !important; background-color: var(--surface) !important; }
+    .stButton button, .stDownloadButton button { border-radius: var(--radius-sm) !important; font-weight: 600 !important; border: 1px solid var(--border) !important; }
+    .stButton button[kind="primary"], .stDownloadButton button[kind="primary"] { background-color: var(--primary) !important; border: none !important; color: white !important;}
+
+    ::-webkit-scrollbar { width: 9px; height: 9px; }
+    ::-webkit-scrollbar-thumb { background: #C9CEDA; border-radius: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ================= 2. KẾT NỐI CSDL & KHỞI TẠO =================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "Report_Database.db")
 IMG_DIR = os.path.join(BASE_DIR, "Anh_kiem_tra_dau_vao")
@@ -56,216 +180,17 @@ def init_db():
         """)
     cursor.execute("PRAGMA table_info(tb_qc_dau_vao)")
     cols = [col[1] for col in cursor.fetchall()]
-    if "loai_qc" not in cols:
-      cursor.execute("ALTER TABLE tb_qc_dau_vao ADD COLUMN loai_qc TEXT DEFAULT 'DAU_VAO'")
-    if "kieu_loi" not in cols:
-      cursor.execute("ALTER TABLE tb_qc_dau_vao ADD COLUMN kieu_loi TEXT DEFAULT ''")
-    if "cong_viec_con" not in cols:
-      cursor.execute("ALTER TABLE tb_qc_dau_vao ADD COLUMN cong_viec_con TEXT DEFAULT ''")
-
-    cursor.execute("""
-            CREATE TABLE IF NOT EXISTS tb_dm_loai_loi (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                phan_he TEXT,
-                ten_loi TEXT
-            )
-        """)
-    cursor.execute("""
-            CREATE TABLE IF NOT EXISTS tb_dm_cong_viec (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                phan_he TEXT,
-                ten_cong_viec TEXT
-            )
-        """)
+    if "loai_qc" not in cols: cursor.execute("ALTER TABLE tb_qc_dau_vao ADD COLUMN loai_qc TEXT DEFAULT 'DAU_VAO'")
+    if "kieu_loi" not in cols: cursor.execute("ALTER TABLE tb_qc_dau_vao ADD COLUMN kieu_loi TEXT DEFAULT ''")
+    if "cong_viec_con" not in cols: cursor.execute("ALTER TABLE tb_qc_dau_vao ADD COLUMN cong_viec_con TEXT DEFAULT ''")
+    cursor.execute("CREATE TABLE IF NOT EXISTS tb_dm_loai_loi (id INTEGER PRIMARY KEY AUTOINCREMENT, phan_he TEXT, ten_loi TEXT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS tb_dm_cong_viec (id INTEGER PRIMARY KEY AUTOINCREMENT, phan_he TEXT, ten_cong_viec TEXT)")
     conn.commit()
     conn.close()
   except Exception:
     pass
 
 init_db()
-
-# ================= 2. CẤU HÌNH DASHBOARD & HỆ THỐNG THIẾT KẾ =================
-st.set_page_config(
-    page_title="EMIC - Dashboard Tổng Hợp",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
-
-st.markdown(
-    """
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
-        
-        /* Đồng bộ Font chữ toàn cục */
-        * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
-        
-        #MainMenu { visibility: hidden; }
-        footer { visibility: hidden; }
-        header[data-testid="stHeader"] { display: none !important; }
-        div[data-baseweb="popover"] { z-index: 999999 !important; }
-
-        :root {
-            --bg: #F5F6F9;
-            --bg-accent: #EEF1FA;
-            --surface: #FFFFFF;
-            --border: #E6E9F0;
-            --border-strong: #D6DAE5;
-            --text: #0F1222;
-            --text-muted: #6B7280;
-            --primary: #4F46E5;
-            --primary-soft: #EEF0FF;
-            --success: #0EA968;
-            --success-soft: #ECFDF5;
-            --danger: #E23D4D;
-            --danger-soft: #FEF2F3;
-            --warning: #EA8A0A;
-            --warning-soft: #FFF8EB;
-            --purple: #9333EA;
-            --radius-lg: 18px;
-            --radius: 14px;
-            --radius-sm: 10px;
-            --shadow: 0 1px 3px rgba(15,18,34,0.05), 0 6px 16px -6px rgba(15,18,34,0.08);
-            --shadow-hover: 0 8px 24px -6px rgba(15,18,34,0.14);
-        }
-
-        html, body, [class*="css"], .stApp {
-            color: var(--text);
-        }
-        .stApp {
-            background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 50%, #F3E8FF 100%) !important;
-            background-attachment: fixed !important;
-        }
-
-        /* Full màn hình giống webbaoca */
-        .main .block-container, div[data-testid="stAppViewBlockContainer"] {
-            padding: 0.8rem 0.6rem 3rem 0.6rem !important; 
-            max-width: 100% !important; 
-            margin: 0 auto !important;
-        }
-
-        /* CSS Header, logo, và title giống webbaoca */
-        .app-header {
-            background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 50%, #1E3A8A 100%);
-            color: white; 
-            padding: 18px 15px; 
-            border-radius: 18px; 
-            text-align: center;
-            box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.45); 
-            margin-bottom: 22px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-        .emic-logo { font-size: 11px; font-weight: 900; letter-spacing: 2px; color: #FDE047; text-transform: uppercase; margin-bottom: 3px; }
-        .app-title { font-size: 19px; font-weight: 900; color: #FFFFFF; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        .app-meta { font-size: 12.5px; color: #E2E8F0; margin-top: 5px; font-weight: 600; }
-
-        .filter-banner {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 16px 22px;
-            box-shadow: var(--shadow);
-            margin-bottom: 22px;
-        }
-        .filter-banner .filter-title {
-            font-size: 13px; font-weight: 700; color: var(--text-muted);
-            text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px;
-            display: flex; align-items: center; gap: 6px;
-        }
-
-        /* Tùy chỉnh Menu dạng cây bên Sidebar */
-        [data-testid="stSidebar"] {
-            background-color: var(--surface) !important;
-            border-right: 1px solid var(--border);
-        }
-        /* Style cho nút radio menu tree */
-        [data-testid="stSidebar"] div[role="radiogroup"] > label {
-            padding: 10px 14px;
-            background: transparent;
-            border-radius: 10px;
-            margin-bottom: 5px;
-            transition: all 0.2s ease;
-            cursor: pointer;
-            border: 1px solid transparent;
-        }
-        [data-testid="stSidebar"] div[role="radiogroup"] > label:hover {
-            background: var(--bg-accent);
-        }
-        [data-testid="stSidebar"] div[role="radiogroup"] > label[data-baseweb="radio"] div:first-child {
-            display: none !important; /* Ẩn vòng tròn radio */
-        }
-        [data-testid="stSidebar"] div[role="radiogroup"] p {
-            font-weight: 700 !important;
-            font-size: 14px !important;
-            color: #475569;
-            margin: 0;
-        }
-        [data-testid="stSidebar"] div[role="radiogroup"] > label[aria-checked="true"] {
-            background: #EEF2FF;
-            border-left: 5px solid #4F46E5;
-            border-radius: 4px 10px 10px 4px;
-        }
-        [data-testid="stSidebar"] div[role="radiogroup"] > label[aria-checked="true"] p {
-            color: #4F46E5 !important;
-        }
-
-        /* Tabs nội bộ cho các trang con */
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 20px !important;
-            background-color: transparent !important;
-            padding: 0px !important;
-            border-bottom: 1px solid var(--border) !important;
-            margin-bottom: 22px !important;
-        }
-        .stTabs [data-baseweb="tab"] {
-            background-color: transparent !important;
-            color: var(--text-muted) !important;
-            padding: 4px 2px 13px 2px !important;
-            border: none !important;
-            border-bottom: 2.5px solid transparent !important;
-            font-weight: 600 !important;
-            font-size: 14.5px !important;
-        }
-        .stTabs [aria-selected="true"] { color: var(--primary) !important; border-bottom: 2.5px solid var(--primary) !important; }
-
-        .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
-        .kpi-card {
-            background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-            padding: 18px 20px; box-shadow: var(--shadow); position: relative; overflow: hidden;
-            transition: transform 0.18s ease;
-        }
-        .kpi-card:hover { transform: translateY(-2px); }
-        .kpi-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--accent, var(--primary)); }
-        .kpi-card .kpi-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-        .kpi-card .kpi-label { font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
-        .kpi-card .kpi-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; background: var(--accent-soft, var(--primary-soft)); }
-        .kpi-card .kpi-value { font-size: 27px; font-weight: 800; color: var(--text); }
-        .kpi-card .kpi-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 6px; font-weight: 500; }
-
-        .chart-card {
-            background-color: var(--surface); border-radius: var(--radius); border: 1px solid var(--border);
-            padding: 18px 22px 10px 22px; box-shadow: var(--shadow); margin-bottom: 20px;
-        }
-        .chart-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
-        .chart-card-title { font-size: 15.5px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 8px; }
-        .chart-card-title::before { content: ""; width: 4px; height: 15px; border-radius: 2px; background: var(--primary); display: inline-block; }
-        .chart-card-caption { font-size: 11px; color: var(--text-muted); font-weight: 600; background: var(--bg); padding: 3px 9px; border-radius: 999px; }
-
-        .section-heading { font-size: 16.5px; font-weight: 800; color: var(--text); margin: 6px 0 14px 2px; }
-
-        div[data-testid="stDataFrame"] { border: 1px solid var(--border) !important; border-radius: var(--radius) !important; box-shadow: var(--shadow); overflow: hidden; }
-        [data-testid="stWidgetLabel"] p { font-size: 12px !important; font-weight: 700 !important; color: var(--text-muted) !important; text-transform: uppercase; }
-        div[data-baseweb="select"] > div, .stDateInput input, .stTextInput input { border-radius: var(--radius-sm) !important; border-color: var(--border) !important; font-weight: 600 !important; background-color: var(--surface) !important; }
-        .stButton button, .stDownloadButton button { border-radius: var(--radius-sm) !important; font-weight: 600 !important; border: 1px solid var(--border) !important; }
-        .stButton button[kind="primary"], .stDownloadButton button[kind="primary"] { background-color: var(--primary) !important; border: none !important; color: white !important;}
-
-        ::-webkit-scrollbar { width: 9px; height: 9px; }
-        ::-webkit-scrollbar-thumb { background: #C9CEDA; border-radius: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-    </style>
-""",
-    unsafe_allow_html=True,
-)
 
 def _html(raw):
   return "".join(line.strip() for line in raw.strip().splitlines())
@@ -306,13 +231,7 @@ def render_kpi_cards(items):
 
 def chart_card_open(title, caption=""):
   cap_html = f'<span class="chart-card-caption">{caption}</span>' if caption else ""
-  st.markdown(
-      _html(f"""<div class="chart-card">
-          <div class="chart-card-header">
-              <span class="chart-card-title">{title}</span>
-              {cap_html}
-          </div>"""), unsafe_allow_html=True,
-  )
+  st.markdown(_html(f"""<div class="chart-card"><div class="chart-card-header"><span class="chart-card-title">{title}</span>{cap_html}</div>"""), unsafe_allow_html=True)
 
 def chart_card_close():
   st.markdown("</div>", unsafe_allow_html=True)
@@ -350,7 +269,6 @@ def load_data(tu_date, den_date):
   except Exception:
     return pd.DataFrame(), pd.DataFrame()
 
-# ================= 3. HÀM TẠO EXCEL BÁO CÁO =================
 def generate_print_ready_excel(phan_he_code, title_clean, tu_date, den_date, df_monthly, df_plan, df_family, df_year, fig1_mpl, fig2_mpl, fig3_mpl, fig4_mpl):
   output = io.BytesIO()
   wb = openpyxl.Workbook()
@@ -419,8 +337,7 @@ def generate_print_ready_excel(phan_he_code, title_clean, tu_date, den_date, df_
           cell.value = str(val)
           cell.alignment = align_center if col_idx == 1 or len(str(val)) < 10 else align_left
         cell.font = font_data
-        if row_fill.fill_type:
-          cell.fill = row_fill
+        if row_fill.fill_type: cell.fill = row_fill
         cell.border = thin_border
 
     for col in ws.columns:
@@ -437,12 +354,11 @@ def generate_print_ready_excel(phan_he_code, title_clean, tu_date, den_date, df_
       buf.seek(0)
       img = OpenpyxlImage(buf)
       ws.add_image(img, img_pos)
-
   wb.save(output)
   return output.getvalue()
 
 
-# ================= 4. SIDEBAR NAVIGATION TREE MENU =================
+# ================= 3. MENU SIDEBAR & BỘ LỌC =================
 with st.sidebar:
   st.markdown(
       """
@@ -453,39 +369,24 @@ with st.sidebar:
       """, unsafe_allow_html=True
   )
 
-  menu_category = st.selectbox(
-      "📌 DANH MỤC CHÍNH",
-      ["📊 BÁO CÁO TỔNG HỢP", "🔍 QUẢN LÝ CHI TIẾT & CẤU HÌNH"]
-  )
-
+  menu_category = st.selectbox("📌 DANH MỤC CHÍNH", ["📊 BÁO CÁO TỔNG HỢP", "🔍 QUẢN LÝ CHI TIẾT & CẤU HÌNH"])
   st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
-
   if menu_category == "📊 BÁO CÁO TỔNG HỢP":
-      menu_selection = st.radio(
-          "📂 CHỌN PHÂN HỆ",
-          ["📦 Báo Cáo Vật Tư", "⚙️ Báo Cáo Cơ Khí", "🔌 Báo Cáo TU/TI", "⚡ Báo Cáo Công Tơ"]
-      )
+      menu_selection = st.radio("📂 CHỌN PHÂN HỆ", ["📦 Báo Cáo Vật Tư", "⚙️ Báo Cáo Cơ Khí", "🔌 Báo Cáo TU/TI", "⚡ Báo Cáo Công Tơ"])
   else:
-      menu_selection = st.radio(
-          "📂 CHỌN CHỨC NĂNG",
-          ["📋 Danh Sách Vật Tư (QA32)", "🧾 Danh Sách Lệnh SX (COOIS)", "👨‍💼 Năng Suất Cá Nhân", "🚨 Sai Hỏng & DM Lỗi"]
-      )
+      menu_selection = st.radio("📂 CHỌN CHỨC NĂNG", ["📋 Danh Sách Vật Tư (QA32)", "🧾 Danh Sách Lệnh SX (COOIS)", "👨‍💼 Năng Suất Cá Nhân", "🚨 Sai Hỏng & DM Lỗi"])
       
   st.markdown("<hr style='margin: 20px 0; border-color: #E6E9F0;'>", unsafe_allow_html=True)
   st.info("💡 Hướng dẫn: Chọn khoảng thời gian ở màn hình chính để dữ liệu tự động cập nhật.")
 
-# ================= 5. BỘ LỌC THỜI GIAN CỐ ĐỊNH =================
 st.markdown('<div class="filter-banner">', unsafe_allow_html=True)
 st.markdown('<div class="filter-title">📅 BỘ LỌC THỜI GIAN BÁO CÁO TOÀN HỆ THỐNG</div>', unsafe_allow_html=True)
-
 today = date.today()
 first_day_of_month = date(today.year, today.month, 1)
 
 col_f1, col_f2, col_f3 = st.columns([1.5, 1.5, 1.2])
-with col_f1:
-  tu_date = st.date_input("Từ ngày:", first_day_of_month, format="DD/MM/YYYY")
-with col_f2:
-  den_date = st.date_input("Đến ngày:", today, format="DD/MM/YYYY")
+with col_f1: tu_date = st.date_input("Từ ngày:", first_day_of_month, format="DD/MM/YYYY")
+with col_f2: den_date = st.date_input("Đến ngày:", today, format="DD/MM/YYYY")
 with col_f3:
   st.markdown("<div style='height: 25px;'></div>", unsafe_allow_html=True)
   if st.button("🔄 CẬP NHẬT DỮ LIỆU", use_container_width=True, type="primary"):
@@ -502,7 +403,7 @@ render_page_header(
 )
 
 
-# ================= 6. MODULE: BÁO CÁO VẬT TƯ =================
+# ================= 4. DASHBOARD - BÁO CÁO VẬT TƯ =================
 if menu_selection == "📦 Báo Cáo Vật Tư":
   if df_qa32.empty:
     st.info("💡 Chưa có dữ liệu QA32 trong khoảng thời gian đã chọn.")
@@ -514,12 +415,9 @@ if menu_selection == "📦 Báo Cáo Vật Tư":
     top_block_dict = {}
 
     for _, r in df_qa32.iterrows():
-      try:
-        m_idx = datetime.strptime(str(r["ngay_ve_dt"]).split()[0], "%Y-%m-%d").month - 1
-      except Exception:
-        m_idx = 0
-      if not (0 <= m_idx < 12):
-        m_idx = 0
+      try: m_idx = datetime.strptime(str(r["ngay_ve_dt"]).split()[0], "%Y-%m-%d").month - 1
+      except Exception: m_idx = 0
+      if not (0 <= m_idx < 12): m_idx = 0
 
       st_clean = str(r["xac_nhan_sap"]).strip().upper().replace(" ", "") if "xac_nhan_sap" in r and pd.notna(r["xac_nhan_sap"]) else ""
       ft_val = float(r["ft_qty"]) if ("ft_qty" in r and pd.notna(r["ft_qty"])) else 0.0
@@ -593,8 +491,7 @@ if menu_selection == "📦 Báo Cáo Vật Tư":
 
       total_lots_m = [ud01_m[i] + ud02_m[i] + ud03_m[i] for i in range(12)]
       for i in range(12):
-        if total_lots_m[i] > 0:
-          fig1.add_annotation(x=months_labels[i], y=total_lots_m[i], text=f"<b>{int(total_lots_m[i]):,}</b>", showarrow=False, yshift=12, font=dict(size=10.5, family=PLOTLY_FONT, color=COLOR_TEXT), yref="y1")
+        if total_lots_m[i] > 0: fig1.add_annotation(x=months_labels[i], y=total_lots_m[i], text=f"<b>{int(total_lots_m[i]):,}</b>", showarrow=False, yshift=12, font=dict(size=10.5, family=PLOTLY_FONT, color=COLOR_TEXT), yref="y1")
 
       fig1.update_layout(barmode="stack", margin=dict(l=30, r=20, t=8, b=55), height=PLOT_HEIGHT, paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF", legend=dict(orientation="h", yanchor="top", y=-0.22, xanchor="center", x=0.5, font=dict(size=11, family=PLOTLY_FONT, color="#6B7280")))
       fig1.update_xaxes(showgrid=False, tickfont=dict(size=11, family=PLOTLY_FONT, color="#6B7280"))
@@ -648,7 +545,7 @@ if menu_selection == "📦 Báo Cáo Vật Tư":
       st.success("🎉 Không có vật tư nào bị Block hoặc UD 02, 03")
 
 
-# ================= 7. HÀM COOIS TÍCH HỢP TỰ ĐỘNG SỐ LIỆU SAI HỎNG =================
+# ================= 5. HÀM CHUNG COOIS =================
 def render_coois_tab_layout(phan_he_code, title_text):
   df_sub = df_coois[df_coois["phan_he"] == phan_he_code] if not df_coois.empty else pd.DataFrame()
   if df_sub.empty:
@@ -668,15 +565,13 @@ def render_coois_tab_layout(phan_he_code, title_text):
       order_map = dict(zip(df_sub[col_order].astype(str), df_sub["mat_prefix"].astype(str)))
       allowed_orders = set(df_sub[col_order].astype(str).unique())
     else:
-      order_map = {}
-      allowed_orders = set()
+      order_map, allowed_orders = {}, set()
 
     if "ma_tp" in df_sub.columns and "mat_prefix" in df_sub.columns:
       code_map = dict(zip(df_sub["ma_tp"].astype(str), df_sub["mat_prefix"].astype(str)))
       allowed_codes = set(df_sub["ma_tp"].astype(str).unique())
     else:
-      code_map = {}
-      allowed_codes = set()
+      code_map, allowed_codes = {}, set()
 
     df_qc_sub["mat_prefix"] = df_qc_sub["so_lot"].astype(str).map(order_map)
     df_qc_sub["mat_prefix"] = df_qc_sub["mat_prefix"].fillna(df_qc_sub["ma_vt"].astype(str).map(code_map)).fillna("Khác")
@@ -685,23 +580,17 @@ def render_coois_tab_layout(phan_he_code, title_text):
     df_qc_sub = pd.DataFrame()
 
   months_labels = [f"T{i}" for i in range(1, 13)]
-  m_comp_qty, m_uncomp_qty = [0.0] * 12, [0.0] * 12
-  m_tot_orders, m_uncomp_orders = [0] * 12, [0] * 12
+  m_comp_qty, m_uncomp_qty, m_tot_orders, m_uncomp_orders = [0.0]*12, [0.0]*12, [0]*12, [0]*12
   tot_qty_all, deliv_qty_all = 0.0, 0.0
 
   for _, r in df_sub.iterrows():
-    try:
-      m_idx = datetime.strptime(str(r["ngay_lenh_dt"]).split()[0], "%Y-%m-%d").month - 1
-    except Exception:
-      m_idx = 0
+    try: m_idx = datetime.strptime(str(r["ngay_lenh_dt"]).split()[0], "%Y-%m-%d").month - 1
+    except Exception: m_idx = 0
     if not (0 <= m_idx < 12): m_idx = 0
     sl_t, sl_h = float(r["sl_tong"]), float(r["sl_ht"])
     uncomp_q = max(0.0, sl_t - sl_h)
-    tot_qty_all += sl_t
-    deliv_qty_all += sl_h
-    m_comp_qty[m_idx] += sl_h
-    m_uncomp_qty[m_idx] += uncomp_q
-    m_tot_orders[m_idx] += 1
+    tot_qty_all += sl_t; deliv_qty_all += sl_h
+    m_comp_qty[m_idx] += sl_h; m_uncomp_qty[m_idx] += uncomp_q; m_tot_orders[m_idx] += 1
     if sl_h < sl_t: m_uncomp_orders[m_idx] += 1
 
   m_comp_orders = [m_tot_orders[i] - m_uncomp_orders[i] for i in range(12)]
@@ -776,18 +665,15 @@ def render_coois_tab_layout(phan_he_code, title_text):
     if not sub_5.empty:
       summary_fams = sub_5.groupby("mat_prefix")[["sl_ht"]].sum().reset_index()
       fams_x = [str(val) for val in summary_fams["mat_prefix"].tolist() if pd.notna(val) and str(val).strip() and str(val).strip().lower() not in ["none", "nan"]]
-      if not fams_x:
-        fams_x, deliv_fams = ["Trống"], [0.0]
+      if not fams_x: fams_x, deliv_fams = ["Trống"], [0.0]
       else:
         summary_fams = summary_fams[summary_fams["mat_prefix"].isin(fams_x)]
         fams_x, deliv_fams = summary_fams["mat_prefix"].tolist(), summary_fams["sl_ht"].values
-    else:
-      fams_x, deliv_fams = ["Không có SP"], [0.0]
+    else: fams_x, deliv_fams = ["Không có SP"], [0.0]
 
     if len(fams_x) > 1:
       pairs = sorted(zip(fams_x, deliv_fams), key=lambda p: p[1], reverse=True)
-      fams_x = [p[0] for p in pairs]
-      deliv_fams = [p[1] for p in pairs]
+      fams_x = [p[0] for p in pairs]; deliv_fams = [p[1] for p in pairs]
 
     bar_colors = [DISTINCT_COLORS[i % len(DISTINCT_COLORS)] for i in range(len(fams_x))]
     fig4 = go.Figure()
@@ -805,30 +691,26 @@ def render_coois_tab_layout(phan_he_code, title_text):
   ax_m1_twin.bar(np.arange(12) + 0.18, m_comp_qty, width=0.35, color=COLOR_SUCCESS, label="SL HT")
   ax_m1_twin.bar(np.arange(12) + 0.18, m_uncomp_qty, width=0.35, bottom=m_comp_qty, color=COLOR_WARNING, label="SL Chưa Xong")
   ax_m1.set_title(f"TIẾN ĐỘ SẢN XUẤT - {title_clean}", fontweight="bold")
-  ax_m1.set_xticks(np.arange(12))
-  ax_m1.set_xticklabels(months_labels)
+  ax_m1.set_xticks(np.arange(12)); ax_m1.set_xticklabels(months_labels)
   ax_m1_twin.set_yscale("symlog", linthresh=100)
   plt.close(fig1_mpl)
 
   fig2_mpl, ax_m2 = plt.subplots(figsize=(4, 3.2), dpi=200)
   ax_m2.set_aspect("equal")
-  if tot_qty_all > 0:
-    ax_m2.pie([deliv_qty_all, rem_qty_kpi], labels=["Hoàn thành", "Chưa xong"], colors=[COLOR_SUCCESS, COLOR_WARNING], autopct="%1.1f%%", startangle=140, wedgeprops=dict(width=0.35, edgecolor="white"))
+  if tot_qty_all > 0: ax_m2.pie([deliv_qty_all, rem_qty_kpi], labels=["Hoàn thành", "Chưa xong"], colors=[COLOR_SUCCESS, COLOR_WARNING], autopct="%1.1f%%", startangle=140, wedgeprops=dict(width=0.35, edgecolor="white"))
   ax_m2.set_title("TỶ LỆ HOÀN THÀNH TỔNG QUAN", fontweight="bold")
   plt.close(fig2_mpl)
 
   fig3_mpl, ax_m3 = plt.subplots(figsize=(6, 3.0), dpi=200)
   ax_m3.bar(np.arange(12), m3_qty, width=0.45, color=COLOR_PRIMARY)
-  ax_m3.set_xticks(np.arange(12))
-  ax_m3.set_xticklabels(months_labels)
+  ax_m3.set_xticks(np.arange(12)); ax_m3.set_xticklabels(months_labels)
   ax_m3.set_yscale("symlog", linthresh=100)
   ax_m3.set_title(f"SẢN LƯỢNG - DÒNG: {clean_emoji(sel_fam)}", fontweight="bold")
   plt.close(fig3_mpl)
 
   fig4_mpl, ax_m4 = plt.subplots(figsize=(6, 3.0), dpi=200)
   ax_m4.bar(np.arange(len(fams_x)), deliv_fams, width=0.45, color=bar_colors)
-  ax_m4.set_xticks(np.arange(len(fams_x)))
-  ax_m4.set_xticklabels(fams_x)
+  ax_m4.set_xticks(np.arange(len(fams_x))); ax_m4.set_xticklabels(fams_x)
   ax_m4.set_yscale("symlog", linthresh=100)
   ax_m4.set_title("TỔNG SẢN LƯỢNG CẢ NĂM CÁC MÃ ĐẦU 5", fontweight="bold")
   plt.close(fig4_mpl)
@@ -847,50 +729,37 @@ def render_coois_tab_layout(phan_he_code, title_text):
 
   st.markdown("<hr style='margin: 8px 0 18px 0; border-color: #E4E8F0;'>", unsafe_allow_html=True)
   col_hdr, col_btn = st.columns([2.5, 1.2])
-  with col_hdr:
-    render_section_heading(f"📥 Xuất Báo Cáo Excel Chi Tiết — {title_clean.upper()}")
+  with col_hdr: render_section_heading(f"📥 Xuất Báo Cáo Excel Chi Tiết — {title_clean.upper()}")
   excel_bytes = generate_print_ready_excel(phan_he_code, title_clean, tu_date, den_date, df_monthly_summary, df_plan_summary, df_family_summary, df_year_summary, fig1_mpl, fig2_mpl, fig3_mpl, fig4_mpl)
-  with col_btn:
-    st.download_button(label="📥 XUẤT BÁO CÁO EXCEL CHUYÊN NGHIỆP", data=excel_bytes, file_name=(f"BaoCao_EMIC_{phan_he_code}_{datetime.now().strftime('%Y%m%d')}.xlsx"), mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", type="primary")
+  with col_btn: st.download_button(label="📥 XUẤT BÁO CÁO EXCEL CHUYÊN NGHIỆP", data=excel_bytes, file_name=(f"BaoCao_EMIC_{phan_he_code}_{datetime.now().strftime('%Y%m%d')}.xlsx"), mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", type="primary")
 
-elif menu_selection == "⚙️ Báo Cáo Cơ Khí":
-  render_coois_tab_layout("CO_KHI", "⚙️ BÁO CÁO CƠ KHÍ (LỆNH 3012)")
-elif menu_selection == "🔌 Báo Cáo TU/TI":
-  render_coois_tab_layout("TU_TI", "🔌 BÁO CÁO TUTI (LỆNH 3011)")
-elif menu_selection == "⚡ Báo Cáo Công Tơ":
-  render_coois_tab_layout("CONG_TO", "⚡ BÁO CÁO CÔNG TƠ (LỆNH 3013, 3016)")
+elif menu_selection == "⚙️ Báo Cáo Cơ Khí": render_coois_tab_layout("CO_KHI", "⚙️ BÁO CÁO CƠ KHÍ (LỆNH 3012)")
+elif menu_selection == "🔌 Báo Cáo TU/TI": render_coois_tab_layout("TU_TI", "🔌 BÁO CÁO TUTI (LỆNH 3011)")
+elif menu_selection == "⚡ Báo Cáo Công Tơ": render_coois_tab_layout("CONG_TO", "⚡ BÁO CÁO CÔNG TƠ (LỆNH 3013, 3016)")
 
-# ================= 8. MODULE: DANH SÁCH CHI TIẾT & NĂNG SUẤT =================
+
+# ================= 6. MODULE: DANH SÁCH CHI TIẾT & NĂNG SUẤT =================
 elif menu_selection == "📋 Danh Sách Vật Tư (QA32)":
   render_section_heading("📦 DANH SÁCH CHI TIẾT VẬT TƯ KIỂM TRA (QA32)")
   chart_card_open("⚙️ Bộ Lọc Dữ Liệu QA32")
   col_flt1, col_flt2, col_flt3, col_flt4 = st.columns([1, 1, 1, 1.5])
-  with col_flt1:
-    filter_status_vt = st.selectbox("Trạng thái kiểm:", ["Tất cả", "Đã kiểm (Đã UD)", "Chưa kiểm (Chưa UD)"], key="ds_filter_status_vt")
-  with col_flt3:
-    filter_loai_sp_vt = st.selectbox("Loại sản phẩm:", ["Tất cả", "Bán thành phẩm (Đầu 5)", "Thành phẩm (Khác Đầu 5)"], key="ds_filter_loai_sp_vt")
-  with col_flt4:
-    search_keyword_vt = st.text_input("🔎 Tìm kiếm nhanh (Mã/Tên/NCC):", "", key="ds_search_keyword_vt")
+  with col_flt1: filter_status_vt = st.selectbox("Trạng thái kiểm:", ["Tất cả", "Đã kiểm (Đã UD)", "Chưa kiểm (Chưa UD)"], key="ds_filter_status_vt")
+  with col_flt3: filter_loai_sp_vt = st.selectbox("Loại sản phẩm:", ["Tất cả", "Bán thành phẩm (Đầu 5)", "Thành phẩm (Khác Đầu 5)"], key="ds_filter_loai_sp_vt")
+  with col_flt4: search_keyword_vt = st.text_input("🔎 Tìm kiếm nhanh (Mã/Tên/NCC):", "", key="ds_search_keyword_vt")
   chart_card_close()
 
   if not df_qa32.empty:
     df_qa32_view = df_qa32.copy()
-    if "ngay_ve_dt" in df_qa32_view.columns:
-      df_qa32_view["ngay_ve_format"] = pd.to_datetime(df_qa32_view["ngay_ve_dt"], errors="coerce").dt.strftime("%d/%m/%Y")
-    else:
-      df_qa32_view["ngay_ve_format"] = "-"
+    if "ngay_ve_dt" in df_qa32_view.columns: df_qa32_view["ngay_ve_format"] = pd.to_datetime(df_qa32_view["ngay_ve_dt"], errors="coerce").dt.strftime("%d/%m/%Y")
+    else: df_qa32_view["ngay_ve_format"] = "-"
 
     if "xac_nhan_sap" in df_qa32_view.columns:
-      if filter_status_vt == "Đã kiểm (Đã UD)":
-        df_qa32_view = df_qa32_view[df_qa32_view["xac_nhan_sap"].notna() & (~df_qa32_view["xac_nhan_sap"].astype(str).str.contains("CHƯA|NAN|NONE", case=False, na=False))]
-      elif filter_status_vt == "Chưa kiểm (Chưa UD)":
-        df_qa32_view = df_qa32_view[df_qa32_view["xac_nhan_sap"].isna() | df_qa32_view["xac_nhan_sap"].astype(str).str.contains("CHƯA|NAN|NONE", case=False, na=False)]
+      if filter_status_vt == "Đã kiểm (Đã UD)": df_qa32_view = df_qa32_view[df_qa32_view["xac_nhan_sap"].notna() & (~df_qa32_view["xac_nhan_sap"].astype(str).str.contains("CHƯA|NAN|NONE", case=False, na=False))]
+      elif filter_status_vt == "Chưa kiểm (Chưa UD)": df_qa32_view = df_qa32_view[df_qa32_view["xac_nhan_sap"].isna() | df_qa32_view["xac_nhan_sap"].astype(str).str.contains("CHƯA|NAN|NONE", case=False, na=False)]
 
     if "ma_vt" in df_qa32_view.columns:
-      if filter_loai_sp_vt == "Bán thành phẩm (Đầu 5)":
-        df_qa32_view = df_qa32_view[df_qa32_view["ma_vt"].astype(str).str.lstrip("0").str.startswith("5")]
-      elif filter_loai_sp_vt == "Thành phẩm (Khác Đầu 5)":
-        df_qa32_view = df_qa32_view[~df_qa32_view["ma_vt"].astype(str).str.lstrip("0").str.startswith("5")]
+      if filter_loai_sp_vt == "Bán thành phẩm (Đầu 5)": df_qa32_view = df_qa32_view[df_qa32_view["ma_vt"].astype(str).str.lstrip("0").str.startswith("5")]
+      elif filter_loai_sp_vt == "Thành phẩm (Khác Đầu 5)": df_qa32_view = df_qa32_view[~df_qa32_view["ma_vt"].astype(str).str.lstrip("0").str.startswith("5")]
 
     if search_keyword_vt.strip():
       kw = search_keyword_vt.strip().lower()
@@ -915,52 +784,37 @@ elif menu_selection == "📋 Danh Sách Vật Tư (QA32)":
       st.dataframe(df_vt_display, column_config={"STT": st.column_config.NumberColumn("STT", width="small"), "Giá trị kiểm": st.column_config.TextColumn("Giá trị kiểm", width="medium")}, use_container_width=True, hide_index=True, height=480)
 
       buf_vt = io.BytesIO()
-      with pd.ExcelWriter(buf_vt, engine="openpyxl") as writer:
-        df_vt_display.to_excel(writer, sheet_name="DanhSach_VatTu_QA32", index=False)
+      with pd.ExcelWriter(buf_vt, engine="openpyxl") as writer: df_vt_display.to_excel(writer, sheet_name="DanhSach_VatTu_QA32", index=False)
       st.download_button(label="📥 Xuất Bảng Vật Tư (Excel)", data=buf_vt.getvalue(), file_name=(f"DanhSach_VatTu_QA32_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"), mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", type="primary")
-    else:
-      st.warning("⚠️ Không tìm thấy bản ghi vật tư nào phù hợp với bộ lọc.")
-  else:
-    st.info("💡 Chưa có dữ liệu vật tư.")
+    else: st.warning("⚠️ Không tìm thấy bản ghi vật tư nào phù hợp với bộ lọc.")
+  else: st.info("💡 Chưa có dữ liệu vật tư.")
 
 elif menu_selection == "🧾 Danh Sách Lệnh SX (COOIS)":
   render_section_heading("⚙️ DANH SÁCH CHI TIẾT LỆNH KIỂM TRA / SẢN XUẤT (COOIS)")
   chart_card_open("⚙️ Bộ Lọc Dữ Liệu COOIS")
   col_f1, col_f2, col_f3, col_f4 = st.columns([1, 1, 1, 1.5])
-  with col_f1:
-    filter_status_l = st.selectbox("Trạng thái:", ["Tất cả", "Đã xong", "Chưa xong"], key="ds_filter_status_l")
-  with col_f2:
-    filter_phan_he_l = st.selectbox("Xưởng / Phân hệ:", ["Tất cả", "Cơ khí (CO_KHI)", "TU/TI (TU_TI)", "Công tơ (CONG_TO)"], key="ds_filter_phan_he_l")
-  with col_f3:
-    filter_loai_sp_l = st.selectbox("Loại sản phẩm:", ["Tất cả", "Bán thành phẩm (Đầu 4)", "Sản phẩm (Đầu 5)"], key="ds_filter_loai_sp_l")
-  with col_f4:
-    search_keyword_l = st.text_input("🔎 Tìm kiếm nhanh (Số lệnh/Mã/Tên):", "", key="ds_search_keyword_l")
+  with col_f1: filter_status_l = st.selectbox("Trạng thái:", ["Tất cả", "Đã xong", "Chưa xong"], key="ds_filter_status_l")
+  with col_f2: filter_phan_he_l = st.selectbox("Xưởng / Phân hệ:", ["Tất cả", "Cơ khí (CO_KHI)", "TU/TI (TU_TI)", "Công tơ (CONG_TO)"], key="ds_filter_phan_he_l")
+  with col_f3: filter_loai_sp_l = st.selectbox("Loại sản phẩm:", ["Tất cả", "Bán thành phẩm (Đầu 4)", "Sản phẩm (Đầu 5)"], key="ds_filter_loai_sp_l")
+  with col_f4: search_keyword_l = st.text_input("🔎 Tìm kiếm nhanh (Số lệnh/Mã/Tên):", "", key="ds_search_keyword_l")
   chart_card_close()
 
   phan_he_code_map = {"Cơ khí (CO_KHI)": "CO_KHI", "TU/TI (TU_TI)": "TU_TI", "Công tơ (CONG_TO)": "CONG_TO"}
 
   if not df_coois.empty:
     df_coois_view = df_coois.copy()
-    if "ngay_lenh_dt" in df_coois_view.columns:
-      df_coois_view["ngay_lenh_format"] = pd.to_datetime(df_coois_view["ngay_lenh_dt"], errors="coerce").dt.strftime("%d/%m/%Y")
-    else:
-      df_coois_view["ngay_lenh_format"] = "-"
+    if "ngay_lenh_dt" in df_coois_view.columns: df_coois_view["ngay_lenh_format"] = pd.to_datetime(df_coois_view["ngay_lenh_dt"], errors="coerce").dt.strftime("%d/%m/%Y")
+    else: df_coois_view["ngay_lenh_format"] = "-"
 
-    if filter_phan_he_l != "Tất cả" and "phan_he" in df_coois_view.columns:
-      target_ph = phan_he_code_map.get(filter_phan_he_l)
-      df_coois_view = df_coois_view[df_coois_view["phan_he"] == target_ph]
+    if filter_phan_he_l != "Tất cả" and "phan_he" in df_coois_view.columns: df_coois_view = df_coois_view[df_coois_view["phan_he"] == phan_he_code_map.get(filter_phan_he_l)]
 
     if "sl_tong" in df_coois_view.columns and "sl_ht" in df_coois_view.columns:
-      if filter_status_l == "Đã xong":
-        df_coois_view = df_coois_view[df_coois_view["sl_ht"] >= df_coois_view["sl_tong"]]
-      elif filter_status_l == "Chưa xong":
-        df_coois_view = df_coois_view[df_coois_view["sl_ht"] < df_coois_view["sl_tong"]]
+      if filter_status_l == "Đã xong": df_coois_view = df_coois_view[df_coois_view["sl_ht"] >= df_coois_view["sl_tong"]]
+      elif filter_status_l == "Chưa xong": df_coois_view = df_coois_view[df_coois_view["sl_ht"] < df_coois_view["sl_tong"]]
 
     if "ma_tp" in df_coois_view.columns:
-      if filter_loai_sp_l == "Bán thành phẩm (Đầu 4)":
-        df_coois_view = df_coois_view[df_coois_view["ma_tp"].astype(str).str.split(".").str[0].str.lstrip("0").str.startswith("4")]
-      elif filter_loai_sp_l == "Sản phẩm (Đầu 5)":
-        df_coois_view = df_coois_view[df_coois_view["ma_tp"].astype(str).str.split(".").str[0].str.lstrip("0").str.startswith("5")]
+      if filter_loai_sp_l == "Bán thành phẩm (Đầu 4)": df_coois_view = df_coois_view[df_coois_view["ma_tp"].astype(str).str.split(".").str[0].str.lstrip("0").str.startswith("4")]
+      elif filter_loai_sp_l == "Sản phẩm (Đầu 5)": df_coois_view = df_coois_view[df_coois_view["ma_tp"].astype(str).str.split(".").str[0].str.lstrip("0").str.startswith("5")]
 
     if search_keyword_l.strip():
       kw = search_keyword_l.strip().lower()
@@ -986,13 +840,10 @@ elif menu_selection == "🧾 Danh Sách Lệnh SX (COOIS)":
       st.dataframe(df_lenh_display, column_config={"STT": st.column_config.NumberColumn("STT", width="small"), "Tổng số lượng": st.column_config.NumberColumn("Tổng số lượng", format="%d"), "Tổng số đã giao": st.column_config.NumberColumn("Tổng số đã giao", format="%d")}, use_container_width=True, hide_index=True, height=480)
 
       buf_lenh = io.BytesIO()
-      with pd.ExcelWriter(buf_lenh, engine="openpyxl") as writer:
-        df_lenh_display.to_excel(writer, sheet_name="DanhSach_Lenh_COOIS", index=False)
+      with pd.ExcelWriter(buf_lenh, engine="openpyxl") as writer: df_lenh_display.to_excel(writer, sheet_name="DanhSach_Lenh_COOIS", index=False)
       st.download_button(label="📥 Xuất Bảng Lệnh Kiểm Tra (Excel)", data=buf_lenh.getvalue(), file_name=(f"DanhSach_Lenh_COOIS_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"), mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", type="primary")
-    else:
-      st.warning("⚠️ Không tìm thấy bản ghi lệnh nào phù hợp với bộ lọc.")
-  else:
-    st.info("💡 Chưa có dữ liệu lệnh sản xuất.")
+    else: st.warning("⚠️ Không tìm thấy bản ghi lệnh nào phù hợp với bộ lọc.")
+  else: st.info("💡 Chưa có dữ liệu lệnh sản xuất.")
 
 elif menu_selection == "👨‍💼 Năng Suất Cá Nhân":
   render_section_heading("👨‍💼 NHẬT KÝ & QUẢN LÝ NĂNG SUẤT QC")
@@ -1010,19 +861,14 @@ elif menu_selection == "👨‍💼 Năng Suất Cá Nhân":
         chart_card_open("👨‍💼 Bộ Lọc Tính Năng Suất Làm Việc QC")
         col_flt_person, col_flt_type = st.columns([1.5, 1])
         list_inspectors = ["Tất cả nhân sự"] + sorted([str(x).strip() for x in df_qc_logs["nguoi_kiem"].dropna().unique() if str(x).strip()])
-        with col_flt_person:
-          selected_inspector = st.selectbox("👤 Chọn Nhân sự QC:", list_inspectors, key="ns_inspector")
-        with col_flt_type:
-          selected_loai_qc = st.selectbox("🎯 Phân hệ kiểm:", ["Tất cả", "QC Đầu Vào (DAU_VAO)", "QC Sản Xuất (SAN_XUAT)"], key="ns_loai_qc")
+        with col_flt_person: selected_inspector = st.selectbox("👤 Chọn Nhân sự QC:", list_inspectors, key="ns_inspector")
+        with col_flt_type: selected_loai_qc = st.selectbox("🎯 Phân hệ kiểm:", ["Tất cả", "QC Đầu Vào (DAU_VAO)", "QC Sản Xuất (SAN_XUAT)"], key="ns_loai_qc")
         chart_card_close()
 
         df_filtered = df_qc_logs.copy()
-        if selected_inspector != "Tất cả nhân sự":
-          df_filtered = df_filtered[df_filtered["nguoi_kiem"] == selected_inspector]
-        if selected_loai_qc == "QC Đầu Vào (DAU_VAO)":
-          df_filtered = df_filtered[df_filtered["loai_qc"] == "DAU_VAO"]
-        elif selected_loai_qc == "QC Sản Xuất (SAN_XUAT)":
-          df_filtered = df_filtered[df_filtered["loai_qc"] == "SAN_XUAT"]
+        if selected_inspector != "Tất cả nhân sự": df_filtered = df_filtered[df_filtered["nguoi_kiem"] == selected_inspector]
+        if selected_loai_qc == "QC Đầu Vào (DAU_VAO)": df_filtered = df_filtered[df_filtered["loai_qc"] == "DAU_VAO"]
+        elif selected_loai_qc == "QC Sản Xuất (SAN_XUAT)": df_filtered = df_filtered[df_filtered["loai_qc"] == "SAN_XUAT"]
 
         tot_luot = len(df_filtered)
         tot_sl_kiem = df_filtered["sl_kiem"].sum() if "sl_kiem" in df_filtered else 0
@@ -1057,21 +903,16 @@ elif menu_selection == "👨‍💼 Năng Suất Cá Nhân":
         st.dataframe(df_display, column_config={"STT": st.column_config.NumberColumn("STT", width="small"), "SL Kiểm": st.column_config.NumberColumn("SL Kiểm", format="%d"), "SL Lỗi": st.column_config.NumberColumn("SL Lỗi", format="%d"), "SL Đạt": st.column_config.NumberColumn("SL Đạt", format="%d")}, use_container_width=True, hide_index=True, height=450)
 
         buf_ns = io.BytesIO()
-        with pd.ExcelWriter(buf_ns, engine="openpyxl") as writer:
-          df_display.to_excel(writer, sheet_name="NangSuat_QC_ChiTiet", index=False)
+        with pd.ExcelWriter(buf_ns, engine="openpyxl") as writer: df_display.to_excel(writer, sheet_name="NangSuat_QC_ChiTiet", index=False)
         st.download_button(label="📥 XUẤT BÁO CÁO NĂNG SUẤT QC (EXCEL)", data=buf_ns.getvalue(), file_name=(f"BaoCao_NangSuat_QC_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"), mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", type="primary")
-      else:
-        st.info("💡 Chưa có nhật ký báo cáo QC nào trong Cơ sở dữ liệu.")
-    except Exception as e:
-      st.error(f"⚠️ Lỗi khi tải nhật ký QC: {e}")
+      else: st.info("💡 Chưa có nhật ký báo cáo QC nào trong Cơ sở dữ liệu.")
+    except Exception as e: st.error(f"⚠️ Lỗi khi tải nhật ký QC: {e}")
 
   with tab_ns2:
     st.markdown("##### ⚙️ THÊM MỚI CÔNG VIỆC CON / CÔNG ĐOẠN CHO CÁC XƯỞNG")
     col_cv1, col_cv2, col_cv3 = st.columns([1, 1.5, 1])
-    with col_cv1:
-      add_ph_cv = st.selectbox("Chọn Xưởng / Phân hệ:", ["DAU_VAO", "CO_KHI", "TU_TI", "CONG_TO"], key="add_ph_cv")
-    with col_cv2:
-      add_ten_cv = st.text_input("Tên công việc con mới:", placeholder="Gõ tên công đoạn...")
+    with col_cv1: add_ph_cv = st.selectbox("Chọn Xưởng / Phân hệ:", ["DAU_VAO", "CO_KHI", "TU_TI", "CONG_TO"], key="add_ph_cv")
+    with col_cv2: add_ten_cv = st.text_input("Tên công việc con mới:", placeholder="Gõ tên công đoạn...")
     with col_cv3:
       st.markdown("<div style='height:25px;'></div>", unsafe_allow_html=True)
       if st.button("➕ Thêm Công Việc", type="primary", use_container_width=True):
@@ -1080,14 +921,11 @@ elif menu_selection == "👨‍💼 Năng Suất Cá Nhân":
             conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute("INSERT INTO tb_dm_cong_viec (phan_he, ten_cong_viec) VALUES (?, ?)", (add_ph_cv, add_ten_cv.strip()))
-            conn.commit()
-            conn.close()
+            conn.commit(); conn.close()
             st.success(f"✅ Đã thêm công việc: {add_ten_cv.strip()}")
             st.rerun()
-          except Exception as ex:
-            st.error(f"Lỗi thêm công việc con: {ex}")
-        else:
-          st.warning("⚠️ Vui lòng nhập tên công việc con!")
+          except Exception as ex: st.error(f"Lỗi thêm công việc con: {ex}")
+        else: st.warning("⚠️ Vui lòng nhập tên công việc con!")
 
     try:
       conn = get_db_connection()
@@ -1097,8 +935,7 @@ elif menu_selection == "👨‍💼 Năng Suất Cá Nhân":
         st.markdown("##### 📜 Danh Mục Các Công Việc Con Đang Được Áp Dụng")
         df_dm_cv.columns = ["ID", "Phân Hệ / Xưởng", "Tên Công Việc Con"]
         st.dataframe(df_dm_cv, use_container_width=True, hide_index=True)
-    except Exception as ex:
-      st.error(f"Lỗi nạp danh mục công việc: {ex}")
+    except Exception as ex: st.error(f"Lỗi nạp danh mục công việc: {ex}")
 
 elif menu_selection == "🚨 Sai Hỏng & DM Lỗi":
   render_section_heading("🚨 BÁO CÁO PHÂN TÍCH SAI HỎNG & BẢNG LOẠI LỖI")
@@ -1111,12 +948,10 @@ elif menu_selection == "🚨 Sai Hỏng & DM Lỗi":
       conn.close()
       if not df_defects.empty:
         col_sh_f1, col_sh_f2 = st.columns(2)
-        with col_sh_f1:
-          sh_filter_loai = st.selectbox("Lọc Phân Hệ:", ["Tất cả", "DAU_VAO", "CO_KHI", "TU_TI", "CONG_TO"], key="sh_flt_ph")
+        with col_sh_f1: sh_filter_loai = st.selectbox("Lọc Phân Hệ:", ["Tất cả", "DAU_VAO", "CO_KHI", "TU_TI", "CONG_TO"], key="sh_flt_ph")
 
         df_sh_view = df_defects.copy()
-        if sh_filter_loai != "Tất cả":
-          df_sh_view = df_sh_view[df_sh_view["loai_qc"].str.contains(sh_filter_loai, na=False) | df_sh_view["ncc"].str.contains(sh_filter_loai, na=False)]
+        if sh_filter_loai != "Tất cả": df_sh_view = df_sh_view[df_sh_view["loai_qc"].str.contains(sh_filter_loai, na=False) | df_sh_view["ncc"].str.contains(sh_filter_loai, na=False)]
 
         if not df_sh_view.empty and "kieu_loi" in df_sh_view.columns:
           defect_counts = df_sh_view.groupby("kieu_loi")["sl_khong_dat"].sum().reset_index()
@@ -1133,18 +968,14 @@ elif menu_selection == "🚨 Sai Hỏng & DM Lỗi":
         df_sh_display = df_sh_view[["ngay_kiem_fmt", "nguoi_kiem", "so_lot", "ma_vt", "ten_vt", "ncc", "kieu_loi", "sl_khong_dat", "ghi_chu"]]
         df_sh_display.columns = ["Thời Gian", "Người Kiểm", "Lô/Lệnh", "Mã Hàng", "Tên Mặt Hàng", "Xưởng/NCC", "Kiểu Sai Hỏng", "SL Lỗi", "Ghi Chú Chi Tiết"]
         st.dataframe(df_sh_display, use_container_width=True, hide_index=True)
-      else:
-        st.success("🎉 Chưa ghi nhận ca phát sinh sai hỏng nào!")
-    except Exception as e:
-      st.error(f"Lỗi tải báo cáo sai hỏng: {e}")
+      else: st.success("🎉 Chưa ghi nhận ca phát sinh sai hỏng nào!")
+    except Exception as e: st.error(f"Lỗi tải báo cáo sai hỏng: {e}")
 
   with sub_sh2:
     st.markdown("##### ⚙️ THÊM MỚI KIỂU SAI HỎNG CHO CÁC XƯỞNG")
     col_add1, col_add2, col_add3 = st.columns([1, 1.5, 1])
-    with col_add1:
-      add_phan_he = st.selectbox("Chọn Xưởng / Phân hệ:", ["DAU_VAO", "CO_KHI", "TU_TI", "CONG_TO"], key="add_ph_loi")
-    with col_add2:
-      add_ten_loi = st.text_input("Tên kiểu sai hỏng mới:", placeholder="Gõ tên loại lỗi...")
+    with col_add1: add_phan_he = st.selectbox("Chọn Xưởng / Phân hệ:", ["DAU_VAO", "CO_KHI", "TU_TI", "CONG_TO"], key="add_ph_loi")
+    with col_add2: add_ten_loi = st.text_input("Tên kiểu sai hỏng mới:", placeholder="Gõ tên loại lỗi...")
     with col_add3:
       st.markdown("<div style='height:25px;'></div>", unsafe_allow_html=True)
       if st.button("➕ Thêm Loại Lỗi", type="primary", use_container_width=True):
@@ -1153,14 +984,11 @@ elif menu_selection == "🚨 Sai Hỏng & DM Lỗi":
             conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute("INSERT INTO tb_dm_loai_loi (phan_he, ten_loi) VALUES (?, ?)", (add_phan_he, add_ten_loi.strip()))
-            conn.commit()
-            conn.close()
+            conn.commit(); conn.close()
             st.success(f"✅ Đã thêm loại lỗi: {add_ten_loi.strip()}")
             st.rerun()
-          except Exception as ex:
-            st.error(f"Lỗi thêm loại lỗi: {ex}")
-        else:
-          st.warning("⚠️ Vui lòng nhập tên loại lỗi!")
+          except Exception as ex: st.error(f"Lỗi thêm loại lỗi: {ex}")
+        else: st.warning("⚠️ Vui lòng nhập tên loại lỗi!")
 
     try:
       conn = get_db_connection()
@@ -1170,5 +998,4 @@ elif menu_selection == "🚨 Sai Hỏng & DM Lỗi":
         st.markdown("##### 📜 Danh Mục Các Loại Lỗi Đang Được Áp Dụng")
         df_dm_loi.columns = ["ID", "Phân Hệ / Xưởng", "Tên Kiểu Sai Hỏng"]
         st.dataframe(df_dm_loi, use_container_width=True, hide_index=True)
-    except Exception as ex:
-      st.error(f"Lỗi nạp danh mục loại lỗi: {ex}")
+    except Exception as ex: st.error(f"Lỗi nạp danh mục loại lỗi: {ex}")
