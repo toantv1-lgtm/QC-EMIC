@@ -19,7 +19,7 @@ def get_db_connection():
   return conn
 
 
-# ================= 2. CẤU HÌNH GIAO DIỆN MOBILE TỐI ƯU =================
+# ================= 2. CẤU HÌNH GIAO DIỆN MOBILE CHUẨN =================
 st.set_page_config(
     page_title="EMIC QC Mobile Pro",
     page_icon="📱",
@@ -27,13 +27,14 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# Đã sửa lỗi Font CSS: Không dùng '*' để tránh đè phông icon của Streamlit
+# Khắc phục lỗi CSS: Chỉ định chính xác ô nhập liệu, không ghi đè Icon của Streamlit
 st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
     
-    html, body, p, span, label, input, select, button {
+    /* Chỉ áp dụng Font cho văn bản thông thường */
+    .stApp, div[data-testid="stMarkdownContainer"] p, div[data-testid="stWidgetLabel"] label {
         font-family: 'Plus Jakarta Sans', -apple-system, sans-serif !important;
     }
     
@@ -52,7 +53,7 @@ st.markdown(
     .emic-dept { font-size: 13px; font-weight: 800; color: #E0E7FF; letter-spacing: 0.5px; margin-bottom: 4px; }
     .app-title { font-size: 15px; font-weight: 900; color: #FFFFFF; }
 
-    /* Kích thước ô nhập liệu chuẩn mobile */
+    /* Định dạng ô nhập liệu không ảnh hưởng nút File Uploader */
     .stTextInput input, .stSelectbox select, .stNumberInput input {
         font-size: 13px !important; height: 42px !important; border-radius: 10px !important;
         border: 1.5px solid #CBD5E1 !important; font-weight: 700 !important; background-color: #FFFFFF !important;
@@ -74,7 +75,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Header đổi tên Công ty & Phòng QC
+# Header Tiêu đề Công ty & Phòng QC
 st.markdown(
     """
     <div class='app-header'>
@@ -243,7 +244,6 @@ is_qc_dau_vao = "Vật tư" in loai_qc_option
 today = date.today()
 first_day_of_month = date(today.year, today.month, 1)
 
-# GOM BỘ LỌC PHỤ VÀO EXPANDER
 with st.expander("⚙️ BỘ LỌC THỜI GIAN & ĐIỀU KIỆN TÌM KIẾM", expanded=False):
   col_d1, col_d2 = st.columns(2)
   with col_d1:
