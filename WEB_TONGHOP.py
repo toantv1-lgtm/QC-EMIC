@@ -100,7 +100,7 @@ init_db()
 
 # ================= 2. CẤU HÌNH DASHBOARD & HỆ THỐNG THIẾT KẾ =================
 st.set_page_config(
-    page_title="EMIC QC Dashboard Tổng Hợp",
+    page_title="EMIC - Dashboard Tổng Hợp",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -109,7 +109,7 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
         #MainMenu { visibility: hidden; }
         footer { visibility: hidden; }
         header[data-testid="stHeader"] { background: transparent !important; box-shadow: none !important; }
@@ -144,14 +144,14 @@ st.markdown(
         }
 
         html, body, [class*="css"], .stApp {
-            font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif !important;
+            font-family: 'Plus Jakarta Sans', -apple-system, 'Segoe UI', sans-serif !important;
             color: var(--text);
         }
         .stApp {
-            background: radial-gradient(1100px 480px at 12% -8%, var(--bg-accent) 0%, var(--bg) 55%) !important;
+            background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 50%, #F3E8FF 100%) !important;
             background-attachment: fixed !important;
         }
-        h1, h2, h3, h4, h5, h6, p, span, div, label { font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif; }
+        h1, h2, h3, h4, h5, h6, p, span, div, label { font-family: 'Plus Jakarta Sans', sans-serif; }
 
         .main .block-container, div[data-testid="stAppViewBlockContainer"] {
             padding-top: 1.2rem !important;
@@ -209,7 +209,7 @@ st.markdown(
             border-bottom: 2.5px solid transparent !important;
             font-weight: 600 !important;
             font-size: 14.5px !important;
-            font-family: 'Inter', sans-serif !important;
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
             transition: color 0.15s ease, border-color 0.15s ease;
         }
         .stTabs [data-baseweb="tab"]:hover { color: var(--text) !important; }
@@ -272,7 +272,7 @@ st.markdown(
             box-shadow: 0 2px 4px rgba(15,18,34,0.05), 0 8px 20px -6px rgba(15,18,34,0.10);
             overflow: hidden;
         }
-        div[data-testid="stDataFrame"] [data-testid="stDataFrameResizable"] { font-family: 'Inter', sans-serif !important; }
+        div[data-testid="stDataFrame"] [data-testid="stDataFrameResizable"] { font-family: 'Plus Jakarta Sans', sans-serif !important; }
 
         [data-testid="stWidgetLabel"] p {
             font-size: 12px !important; font-weight: 700 !important; color: var(--text-muted) !important;
@@ -280,17 +280,17 @@ st.markdown(
         }
         div[data-baseweb="select"] > div {
             border-radius: var(--radius-sm) !important; border-color: var(--border) !important;
-            font-family: 'Inter', sans-serif !important; background-color: var(--surface) !important;
+            font-family: 'Plus Jakarta Sans', sans-serif !important; background-color: var(--surface) !important;
         }
         .stDateInput input, .stTextInput input {
-            border-radius: var(--radius-sm) !important; font-family: 'Inter', sans-serif !important;
+            border-radius: var(--radius-sm) !important; font-family: 'Plus Jakarta Sans', sans-serif !important;
             border-color: var(--border) !important; background-color: var(--surface) !important;
             font-weight: 600 !important;
         }
 
         .stButton button, .stDownloadButton button {
             border-radius: var(--radius-sm) !important; font-weight: 600 !important;
-            font-family: 'Inter', sans-serif !important; border: 1px solid var(--border) !important;
+            font-family: 'Plus Jakarta Sans', sans-serif !important; border: 1px solid var(--border) !important;
             transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
         }
         .stButton button:hover, .stDownloadButton button:hover { transform: translateY(-1px); }
@@ -385,7 +385,7 @@ DISTINCT_COLORS = [
     "#0891B2",
 ]
 
-PLOTLY_FONT = "Inter, -apple-system, Segoe UI, sans-serif"
+PLOTLY_FONT = "Plus Jakarta Sans, -apple-system, Segoe UI, sans-serif"
 PLOTLY_GRID = "#F1F2F6"
 PLOTLY_AXIS_TEXT = "#6B7280"
 
@@ -406,7 +406,6 @@ def clean_emoji(text):
   return re.sub(r"[^\w\s\(\)\-\/\.\,\:]", "", str(text)).strip()
 
 
-# ================= TRUY VẤN LỌC DỮ LIỆU CSDL CHUẨN ISO YYYY-MM-DD =================
 @st.cache_data(ttl=15)
 def load_data(tu_date, den_date):
   if not os.path.exists(DB_PATH):
@@ -522,9 +521,7 @@ def generate_print_ready_excel(
     ws.page_setup.fitToHeight = 0
     ws.sheet_properties.pageSetUpPr.fitToPage = True
 
-    ws["A1"] = (
-        "TỔNG CÔNG TY THIẾT BỊ ĐIỆN EMIC - PHÒNG QUẢN LÝ CHẤT LƯỢNG (QC)"
-    )
+    ws["A1"] = "EMIC - PHÒNG QUẢN LÝ CHẤT LƯỢNG"
     ws["A1"].font = font_company
     ws["A2"] = f"BÁO CÁO TỔNG HỢP DỮ LIỆU - {title_clean.upper()}"
     ws["A2"].font = font_title
@@ -605,11 +602,9 @@ first_day_of_month = date(today.year, today.month, 1)
 
 col_f1, col_f2, col_f3 = st.columns([1.5, 1.5, 1.2])
 with col_f1:
-  tu_date = st.date_input(
-      "Từ ngày:", first_day_of_month, format="DD/MM/YYYY"
-  )
+  tu_date = st.date_input("Từ ngày:", first_day_of_month)
 with col_f2:
-  den_date = st.date_input("Đến ngày:", today, format="DD/MM/YYYY")
+  den_date = st.date_input("Đến ngày:", today)
 with col_f3:
   st.markdown("<div style='height: 25px;'></div>", unsafe_allow_html=True)
   if st.button("🔄 CẬP NHẬT BÁO CÁO", use_container_width=True, type="primary"):
@@ -623,20 +618,16 @@ with st.sidebar:
       unsafe_allow_html=True,
   )
   st.info("💡 Bạn cũng có thể chọn ngày ở đây:")
-  sb_tu = st.date_input(
-      "Từ ngày (Sidebar)", tu_date, format="DD/MM/YYYY", key="sb_tu"
-  )
-  sb_den = st.date_input(
-      "Đến ngày (Sidebar)", den_date, format="DD/MM/YYYY", key="sb_den"
-  )
+  sb_tu = st.date_input("Từ ngày (Sidebar)", tu_date, key="sb_tu")
+  sb_den = st.date_input("Đến ngày (Sidebar)", den_date, key="sb_den")
   if sb_tu != tu_date or sb_den != den_date:
     tu_date, den_date = sb_tu, sb_den
 
 df_qa32, df_coois = load_data(tu_date, den_date)
 
 render_page_header(
-    "📊 EMIC QC Dashboard Tổng Hợp",
-    "Tổng Công Ty Thiết Bị Điện EMIC · Hệ Thống Báo Cáo QC (Máy Tính Nội Bộ)",
+    "📊 DASHBOARD TỔNG HỢP BÁO CÁO KIỂM TRA",
+    "EMIC - Phòng Quản Lý Chất Lượng",
     f"{tu_date.strftime('%d/%m/%Y')} → {den_date.strftime('%d/%m/%Y')}",
 )
 
@@ -650,7 +641,7 @@ tab_vat_tu, tab_co_khi, tab_tuti, tab_cong_to, tab_danh_sach = st.tabs([
     "🔍 Danh Sách Chi Tiết & Năng Suất",
 ])
 
-# ================= 6. TAB 1: BÁO CÁO VẬT TƯ =================
+# ================= 6. TAB 1: BÁO CÁO VẬT TƯ (NGUYÊN BẢN CÓ ĐỦ BIỂU ĐỒ) =================
 with tab_vat_tu:
   if df_qa32.empty:
     st.info("💡 Chưa có dữ liệu QA32 trong khoảng thời gian đã chọn.")
@@ -672,8 +663,12 @@ with tab_vat_tu:
 
     for _, r in df_qa32.iterrows():
       try:
-        dt_val = pd.to_datetime(r["ngay_ve_dt"], errors="coerce")
-        m_idx = dt_val.month - 1 if pd.notna(dt_val) else 0
+        m_idx = (
+            datetime.strptime(
+                str(r["ngay_ve_dt"]).split()[0], "%Y-%m-%d"
+            ).month
+            - 1
+        )
       except Exception:
         m_idx = 0
       if not (0 <= m_idx < 12):
@@ -1133,12 +1128,14 @@ def render_coois_tab_layout(phan_he_code, title_text):
   except Exception:
     df_qc_sub = pd.DataFrame()
 
+  # Nhận diện an toàn cột chứa Số lệnh sản xuất (so_lenh hoặc lenh_sx)
   col_order = (
       "so_lenh"
       if "so_lenh" in df_sub.columns
       else ("lenh_sx" if "lenh_sx" in df_sub.columns else "")
   )
 
+  # Ghép nối Lô/Lệnh COOIS với Dòng sản phẩm (mat_prefix)
   if not df_qc_sub.empty and not df_sub.empty:
     if col_order and "mat_prefix" in df_sub.columns:
       order_map = dict(
@@ -1180,7 +1177,10 @@ def render_coois_tab_layout(phan_he_code, title_text):
   for _, r in df_sub.iterrows():
     try:
       m_idx = (
-          pd.to_datetime(r["ngay_lenh_dt"], errors="coerce").month - 1
+          datetime.strptime(
+              str(r["ngay_lenh_dt"]).split()[0], "%Y-%m-%d"
+          ).month
+          - 1
       )
     except Exception:
       m_idx = 0
@@ -1576,88 +1576,6 @@ def render_coois_tab_layout(phan_he_code, title_text):
     )
     chart_card_close()
 
-  # HÀNG 3: BỔ SUNG PHÂN TÍCH SAI HỎNG CHO DÒNG SẢN PHẨM ĐÃ CHỌN
-  st.markdown(
-      f"#### 🚨 PHÂN TÍCH SAI HỎNG DÒNG SẢN PHẨM: {clean_emoji(sel_fam)}"
-  )
-  col_sh_fam1, col_sh_fam2 = st.columns([1.1, 1.5])
-
-  df_qc_fam = df_qc_sub.copy()
-  if sel_fam != "Tất cả dòng sản phẩm" and not df_qc_fam.empty:
-    df_qc_fam = df_qc_fam[df_qc_fam["mat_prefix"] == sel_fam]
-
-  with col_sh_fam1:
-    chart_card_open(f"Top Kiểu Lỗi — Dòng: {clean_emoji(sel_fam)}")
-    if not df_qc_fam.empty and "kieu_loi" in df_qc_fam.columns:
-      df_err_agg = (
-          df_qc_fam.groupby("kieu_loi")["sl_khong_dat"].sum().reset_index()
-      )
-      df_err_agg = df_err_agg[df_err_agg["kieu_loi"] != ""].sort_values(
-          by="sl_khong_dat", ascending=True
-      )
-
-      if not df_err_agg.empty:
-        fig_err_fam = go.Figure(
-            go.Bar(
-                x=df_err_agg["sl_khong_dat"],
-                y=df_err_agg["kieu_loi"],
-                orientation="h",
-                marker=dict(color=COLOR_DANGER),
-                text=[f"{v:,.0f}" for v in df_err_agg["sl_khong_dat"]],
-                textposition="outside",
-            )
-        )
-        fig_err_fam.update_layout(
-            margin=dict(l=10, r=40, t=10, b=10),
-            height=260,
-            paper_bgcolor="#FFFFFF",
-            plot_bgcolor="#FFFFFF",
-        )
-        st.plotly_chart(
-            fig_err_fam,
-            use_container_width=True,
-            config={"displayModeBar": False},
-            key=f"coois_fig_err_fam_{phan_he_code}",
-        )
-      else:
-        st.success("🎉 Không ghi nhận kiểu sai hỏng nào!")
-    else:
-      st.success("🎉 Không có ca báo lỗi nào thuộc dòng SP này!")
-    chart_card_close()
-
-  with col_sh_fam2:
-    chart_card_open(f"Nhật Ký Sai Hỏng Chi Tiết — Dòng: {clean_emoji(sel_fam)}")
-    if not df_qc_fam.empty:
-      df_qc_fam_disp = df_qc_fam[[
-          "ngay_kiem",
-          "nguoi_kiem",
-          "so_lot",
-          "ma_vt",
-          "ten_vt",
-          "cong_viec_con",
-          "kieu_loi",
-          "sl_khong_dat",
-      ]].copy()
-      df_qc_fam_disp["ngay_kiem"] = pd.to_datetime(
-          df_qc_fam_disp["ngay_kiem"], errors="coerce"
-      ).dt.strftime("%d/%m/%Y %H:%M:%S")
-      df_qc_fam_disp.columns = [
-          "Thời Gian",
-          "Người Kiểm",
-          "Lệnh SX",
-          "Mã SP",
-          "Tên SP",
-          "Công Đoạn",
-          "Kiểu Sai Hỏng",
-          "SL Lỗi",
-      ]
-      st.dataframe(
-          df_qc_fam_disp, use_container_width=True, hide_index=True, height=230
-      )
-    else:
-      st.info("💡 Chưa có nhật ký báo lỗi cho dòng sản phẩm này.")
-    chart_card_close()
-
   # ================= XUẤT ẢNH MATPLOTLIB ẨN CHO EXCEL =================
   fig1_mpl, ax_m1 = plt.subplots(figsize=(8, 3.2), dpi=200)
   ax_m1_twin = ax_m1.twinx()
@@ -1794,8 +1712,7 @@ def render_coois_tab_layout(phan_he_code, title_text):
   col_hdr, col_btn = st.columns([2.5, 1.2])
   with col_hdr:
     render_section_heading(
-        "📑 Bảng Số Liệu Tổng Hợp & Tỷ Lệ Hiệu Chỉnh —"
-        f" {title_clean.upper()}"
+        f"📥 Xuất Báo Cáo Excel Chi Tiết — {title_clean.upper()}"
     )
   excel_bytes = generate_print_ready_excel(
       phan_he_code,
@@ -1820,91 +1737,6 @@ def render_coois_tab_layout(phan_he_code, title_text):
         ),
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         type="primary",
-    )
-
-  t_col1, t_col2 = st.columns([1.6, 1.0])
-  with t_col1:
-    st.markdown("##### 1. Tiến Độ Sản Xuất Theo Tháng")
-    styled_monthly = (
-        df_monthly_summary.style.background_gradient(
-            subset=["Lệnh Hoàn Thành"], cmap="Blues"
-        )
-        .background_gradient(subset=["Lệnh Chưa Xong"], cmap="Reds")
-        .background_gradient(subset=["SL Hoàn Thành"], cmap="Greens")
-        .background_gradient(subset=["SL Chưa Xong"], cmap="Oranges")
-    )
-    st.dataframe(
-        styled_monthly,
-        column_config={
-            "Tỷ Lệ HT Lệnh (%)": st.column_config.ProgressColumn(
-                "Tỷ Lệ HT Lệnh", format="%.1f%%", min_value=0, max_value=100
-            ),
-            "Tỷ Lệ HT SL (%)": st.column_config.ProgressColumn(
-                "Tỷ Lệ HT SL", format="%.1f%%", min_value=0, max_value=100
-            ),
-            "SL Hoàn Thành": st.column_config.NumberColumn(
-                "SL Hoàn Thành", format="%d"
-            ),
-            "SL Chưa Xong": st.column_config.NumberColumn(
-                "SL Chưa Xong", format="%d"
-            ),
-        },
-        use_container_width=True,
-        hide_index=True,
-    )
-  with t_col2:
-    st.markdown("##### 2. Tổng Quan Chỉ Tiêu Kế Hoạch")
-    styled_plan = df_plan_summary.style.background_gradient(
-        subset=["Số Lượng"], cmap="Blues"
-    )
-    st.dataframe(
-        styled_plan,
-        column_config={
-            "Tỷ Lệ Cơ Cấu (%)": st.column_config.ProgressColumn(
-                "Tỷ Lệ Cơ Cấu", format="%.1f%%", min_value=0, max_value=100
-            ),
-            "Số Lượng": st.column_config.NumberColumn("Số Lượng", format="%d"),
-        },
-        use_container_width=True,
-        hide_index=True,
-    )
-
-  t_col3, t_col4 = st.columns([1.0, 1.0])
-  with t_col3:
-    st.markdown(f"##### 3. Chi Tiết Sản Lượng Dòng SP ({sel_fam})")
-    styled_family = df_family_summary.style.background_gradient(
-        subset=[f"SL Sản Xuất ({sel_fam})"], cmap="Purples"
-    )
-    st.dataframe(
-        styled_family,
-        column_config={
-            "Tỷ Lệ Đóng Góp Tháng (%)": st.column_config.ProgressColumn(
-                "Tỷ Lệ Đóng Góp Tháng", format="%.1f%%", min_value=0, max_value=100
-            ),
-            f"SL Sản Xuất ({sel_fam})": st.column_config.NumberColumn(
-                f"SL Sản Xuất ({sel_fam})", format="%d"
-            ),
-        },
-        use_container_width=True,
-        hide_index=True,
-    )
-  with t_col4:
-    st.markdown("##### 4. Tổng Sản Lượng Cả Năm Các Mã Đầu 5")
-    styled_year = df_year_summary.style.background_gradient(
-        subset=["Tổng SL Hoàn Thành Cả Năm"], cmap="BuGn"
-    )
-    st.dataframe(
-        styled_year,
-        column_config={
-            "Tỷ Lệ Cơ Cấu (%)": st.column_config.ProgressColumn(
-                "Tỷ Lệ Cơ Cấu", format="%.1f%%", min_value=0, max_value=100
-            ),
-            "Tổng SL Hoàn Thành Cả Năm": st.column_config.NumberColumn(
-                "Tổng SL Cả Năm", format="%d"
-            ),
-        },
-        use_container_width=True,
-        hide_index=True,
     )
 
 
@@ -2065,7 +1897,7 @@ with tab_danh_sach:
         ]
         df_vt_display["Giá trị kiểm"] = clean_ud
 
-        st.markdown f"##### 📋 Danh Sách Vật Tư ({len(df_vt_display):,} bản ghi)"
+        st.markdown(f"##### 📋 Danh Sách Vật Tư ({len(df_vt_display):,} bản ghi)")
         st.dataframe(
             df_vt_display,
             column_config={
@@ -2595,13 +2427,7 @@ with tab_danh_sach:
               "kieu_loi",
               "sl_khong_dat",
               "ghi_chu",
-          ]].copy()
-
-          # Ép kiểu ngày giờ dd/mm/yyyy HH:MM:SS
-          df_sh_display["ngay_kiem"] = pd.to_datetime(
-              df_sh_display["ngay_kiem"], errors="coerce"
-          ).dt.strftime("%d/%m/%Y %H:%M:%S")
-
+          ]]
           df_sh_display.columns = [
               "Thời Gian",
               "Người Kiểm",
