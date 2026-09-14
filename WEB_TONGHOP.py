@@ -432,167 +432,7 @@ def load_data(tu_date, den_date):
     return pd.DataFrame(), pd.DataFrame()
 
 
-# ================= 3. HÀM TẠO EXCEL BÁO CÁO =================
-def generate_print_ready_excel(
-    phan_he_code,
-    title_clean,
-    tu_date,
-    den_date,
-    df_monthly,
-    df_plan,
-    df_family,
-    df_year,
-    fig1_mpl,
-    fig2_mpl,
-    fig3_mpl,
-    fig4_mpl,
-):
-  output = io.BytesIO()
-  wb = openpyxl.Workbook()
-  wb.remove(wb.active)
-
-  font_company = Font(name="Calibri", size=10, bold=True, color="1F4E79")
-  font_title = Font(name="Calibri", size=14, bold=True, color="000000")
-  font_subtitle = Font(name="Calibri", size=9, italic=True, color="595959")
-  font_section = Font(name="Calibri", size=11, bold=True, color="1F4E79")
-  font_header = Font(name="Calibri", size=9, bold=True, color="FFFFFF")
-  font_data = Font(name="Calibri", size=9)
-  fill_header = PatternFill(
-      start_color="1F4E79", end_color="1F4E79", fill_type="solid"
-  )
-  fill_zebra = PatternFill(
-      start_color="F9FBFD", end_color="F9FBFD", fill_type="solid"
-  )
-  thin_border = Border(
-      left=Side(style="thin", color="D9D9D9"),
-      right=Side(style="thin", color="D9D9D9"),
-      top=Side(style="thin", color="D9D9D9"),
-      bottom=Side(style="thin", color="D9D9D9"),
-  )
-  header_border = Border(
-      left=Side(style="thin", color="FFFFFF"),
-      right=Side(style="thin", color="FFFFFF"),
-      top=Side(style="medium", color="1F4E79"),
-      bottom=Side(style="medium", color="1F4E79"),
-  )
-  align_center = Alignment(
-      horizontal="center", vertical="center", wrap_text=True
-  )
-  align_left = Alignment(horizontal="left", vertical="center", wrap_text=True)
-  align_right = Alignment(horizontal="right", vertical="center", wrap_text=True)
-
-  sheets_data = [
-      (
-          "TienDo_Thang",
-          "1. TIẾN ĐỘ SẢN XUẤT THEO THÁNG",
-          df_monthly,
-          fig1_mpl,
-          "I7",
-      ),
-      (
-          "TongQuan_KeHoach",
-          "2. TỔNG QUAN CHỈ TIÊU KẾ HOẠCH",
-          df_plan,
-          fig2_mpl,
-          "E7",
-      ),
-      (
-          "Dong_SanPham",
-          "3. CHI TIẾT THEO DÒNG SẢN PHẨM",
-          df_family,
-          fig3_mpl,
-          "D7",
-      ),
-      (
-          "SanLuong_CaNam",
-          "4. TỔNG SẢN LƯỢNG CẢ NĂM MÃ ĐẦU 5",
-          df_year,
-          fig4_mpl,
-          "D7",
-      ),
-  ]
-
-  for sheet_name, section_title, df_table, fig_obj, img_pos in sheets_data:
-    ws = wb.create_sheet(title=sheet_name)
-    ws.views.sheetView[0].showGridLines = True
-    ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
-    ws.page_setup.paperSize = ws.PAPERSIZE_A4
-    ws.page_setup.fitToWidth = 1
-    ws.page_setup.fitToHeight = 0
-    ws.sheet_properties.pageSetUpPr.fitToPage = True
-
-    ws["A1"] = (
-        "TỔNG CÔNG TY THIẾT BỊ ĐIỆN EMIC - PHÒNG QUẢN LÝ CHẤT LƯỢNG (QC)"
-    )
-    ws["A1"].font = font_company
-    ws["A2"] = f"BÁO CÁO TỔNG HỢP DỮ LIỆU - {title_clean.upper()}"
-    ws["A2"].font = font_title
-    ws["A3"] = (
-        f"Thời gian: {tu_date.strftime('%d/%m/%Y')} -"
-        f" {den_date.strftime('%d/%m/%Y')} | Ngày xuất:"
-        f" {datetime.now().strftime('%d/%m/%Y %H:%M')}"
-    )
-    ws["A3"].font = font_subtitle
-    ws["A5"] = section_title
-    ws["A5"].font = font_section
-
-    start_row = 7
-    for col_idx, col_name in enumerate(df_table.columns, start=1):
-      cell = ws.cell(row=start_row, column=col_idx, value=col_name)
-      cell.font = font_header
-      cell.fill = fill_header
-      cell.alignment = align_center
-      cell.border = header_border
-
-    for row_idx, row_data in enumerate(df_table.values, start=start_row + 1):
-      row_fill = (
-          fill_zebra if row_idx % 2 == 0 else PatternFill(fill_type=None)
-      )
-      for col_idx, val in enumerate(row_data, start=1):
-        cell = ws.cell(row=row_idx, column=col_idx)
-        col_name_lower = str(df_table.columns[col_idx - 1]).lower()
-        if isinstance(val, (int, float, np.number)):
-          if "%" in col_name_lower or "tỷ lệ" in col_name_lower:
-            cell.value = float(val) / 100.0 if val > 1.0 else float(val)
-            cell.number_format = "0.0%"
-          else:
-            cell.value = float(val)
-            cell.number_format = (
-                "#,##0" if float(val).is_integer() else "#,##0.00"
-            )
-          cell.alignment = align_right
-        else:
-          cell.value = str(val)
-          cell.alignment = (
-              align_center if col_idx == 1 or len(str(val)) < 10 else align_left
-          )
-        cell.font = font_data
-        if row_fill.fill_type:
-          cell.fill = row_fill
-        cell.border = thin_border
-
-    for col in ws.columns:
-      max_len = 0
-      col_letter = get_column_letter(col[0].column)
-      for cell in col:
-        if cell.row >= start_row and cell.value is not None:
-          max_len = max(max_len, len(str(cell.value)))
-      ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
-
-    if fig_obj is not None:
-      buf = io.BytesIO()
-      fig_obj.savefig(
-          buf, format="png", dpi=200, bbox_inches="tight", facecolor="#FFFFFF"
-      )
-      buf.seek(0)
-      img = OpenpyxlImage(buf)
-      ws.add_image(img, img_pos)
-
-  wb.save(output)
-  return output.getvalue()
-
-
-# ================= 4. BỘ LỌC THỜI GIAN CỐ ĐỊNH =================
+# ================= 3. BỘ LỌC THỜI GIAN CỐ ĐỊNH =================
 st.markdown('<div class="filter-banner">', unsafe_allow_html=True)
 st.markdown(
     '<div class="filter-title">📅 BỘ LỌC THỜI GIAN BÁO CÁO TOÀN HỆ THỐNG</div>',
@@ -640,7 +480,7 @@ render_page_header(
 )
 
 
-# ================= 5. NAVIGATION TABS (5 TABS NGUYÊN BẢN GỐC) =================
+# ================= 4. NAVIGATION TABS =================
 tab_vat_tu, tab_co_khi, tab_tuti, tab_cong_to, tab_danh_sach = st.tabs([
     "📋 Báo Cáo Vật Tư",
     "⚙️ Báo Cáo Cơ Khí",
@@ -649,7 +489,7 @@ tab_vat_tu, tab_co_khi, tab_tuti, tab_cong_to, tab_danh_sach = st.tabs([
     "🔍 Danh Sách Chi Tiết & Năng Suất",
 ])
 
-# ================= 6. TAB 1: BÁO CÁO VẬT TƯ (NGUYÊN BẢN CÓ ĐỦ BIỂU ĐỒ) =================
+# ================= 5. TAB 1: BÁO CÁO VẬT TƯ =================
 with tab_vat_tu:
   if df_qa32.empty:
     st.info("💡 Chưa có dữ liệu QA32 trong khoảng thời gian đã chọn.")
@@ -1107,7 +947,7 @@ with tab_vat_tu:
       st.success("🎉 Không có vật tư nào bị Block hoặc UD 02, 03")
 
 
-# ================= 7. HÀM COOIS TÍCH HỢP TỰ ĐỘNG SỐ LIỆU SAI HỎNG =================
+# ================= 6. HÀM COOIS HIỂN THỊ TINH GỌN (CHỈ GIỮ BIỂU ĐỒ) =================
 def render_coois_tab_layout(phan_he_code, title_text):
   df_sub = (
       df_coois[df_coois["phan_he"] == phan_he_code]
@@ -1118,14 +958,13 @@ def render_coois_tab_layout(phan_he_code, title_text):
     st.info(f"💡 Chưa có dữ liệu sản xuất cho phân hệ {title_text}.")
     return
 
-  # Truy vấn số liệu QC Sai Hỏng từ CSDL Mobile
+  # Truy vấn số liệu QC Sai Hỏng từ CSDL Mobile để tính KPI
   try:
     conn = get_db_connection()
     df_qc_sub = pd.read_sql_query(
-        "SELECT so_lot, ma_vt, ten_vt, sl_kiem, sl_khong_dat, kieu_loi,"
-        " cong_viec_con, nguoi_kiem, ngay_kiem FROM tb_qc_dau_vao WHERE loai_qc"
-        " = 'SAN_XUAT' AND (sl_khong_dat > 0 OR (kieu_loi IS NOT NULL AND"
-        " kieu_loi != '')) ORDER BY ngay_kiem DESC",
+        "SELECT so_lot, ma_vt, sl_khong_dat FROM tb_qc_dau_vao WHERE loai_qc ="
+        " 'SAN_XUAT' AND (sl_khong_dat > 0 OR (kieu_loi IS NOT NULL AND kieu_loi"
+        " != ''))",
         conn,
     )
     conn.close()
@@ -1139,29 +978,13 @@ def render_coois_tab_layout(phan_he_code, title_text):
   )
 
   if not df_qc_sub.empty and not df_sub.empty:
-    if col_order and "mat_prefix" in df_sub.columns:
-      order_map = dict(
-          zip(df_sub[col_order].astype(str), df_sub["mat_prefix"].astype(str))
-      )
-      allowed_orders = set(df_sub[col_order].astype(str).unique())
-    else:
-      order_map = {}
-      allowed_orders = set()
-
-    if "ma_tp" in df_sub.columns and "mat_prefix" in df_sub.columns:
-      code_map = dict(
-          zip(df_sub["ma_tp"].astype(str), df_sub["mat_prefix"].astype(str))
-      )
-      allowed_codes = set(df_sub["ma_tp"].astype(str).unique())
-    else:
-      code_map = {}
-      allowed_codes = set()
-
-    df_qc_sub["mat_prefix"] = df_qc_sub["so_lot"].astype(str).map(order_map)
-    df_qc_sub["mat_prefix"] = (
-        df_qc_sub["mat_prefix"]
-        .fillna(df_qc_sub["ma_vt"].astype(str).map(code_map))
-        .fillna("Khác")
+    allowed_orders = (
+        set(df_sub[col_order].astype(str).unique()) if col_order else set()
+    )
+    allowed_codes = (
+        set(df_sub["ma_tp"].astype(str).unique())
+        if "ma_tp" in df_sub.columns
+        else set()
     )
 
     df_qc_sub = df_qc_sub[
@@ -1194,7 +1017,6 @@ def render_coois_tab_layout(phan_he_code, title_text):
     if sl_h < sl_t:
       m_uncomp_orders[m_idx] += 1
 
-  m_comp_orders = [m_tot_orders[i] - m_uncomp_orders[i] for i in range(12)]
   title_clean = clean_emoji(title_text)
 
   rem_qty_kpi = max(0.0, tot_qty_all - deliv_qty_all)
@@ -1209,6 +1031,7 @@ def render_coois_tab_layout(phan_he_code, title_text):
       (tot_defect_qty / deliv_qty_all * 100.0) if deliv_qty_all > 0 else 0.0
   )
 
+  # 1. KHU VỰC THẺ KPI TỔNG QUAN
   render_kpi_cards([
       {
           "label": "Tổng Kế Hoạch",
@@ -1246,6 +1069,7 @@ def render_coois_tab_layout(phan_he_code, title_text):
 
   PLOT_HEIGHT = 380
 
+  # 2. HÀNG BIỂU ĐỒ 1: SẢN LƯỢNG & TỶ LỆ HOÀN THÀNH THEO THÁNG
   col1, col2 = st.columns([2.1, 1.0])
   with col1:
     chart_card_open(
@@ -1406,6 +1230,7 @@ def render_coois_tab_layout(phan_he_code, title_text):
     )
     chart_card_close()
 
+  # 3. HÀNG BIỂU ĐỒ 2: DÒNG SẢN PHẨM & CÁC MÃ ĐẦU 5
   sub_5 = (
       df_sub[
           df_sub["ma_tp"]
@@ -1573,341 +1398,8 @@ def render_coois_tab_layout(phan_he_code, title_text):
     )
     chart_card_close()
 
-  st.markdown(
-      f"#### 🚨 PHÂN TÍCH SAI HỎNG DÒNG SẢN PHẨM: {clean_emoji(sel_fam)}"
-  )
-  col_sh_fam1, col_sh_fam2 = st.columns([1.1, 1.5])
 
-  df_qc_fam = df_qc_sub.copy()
-  if sel_fam != "Tất cả dòng sản phẩm" and not df_qc_fam.empty:
-    df_qc_fam = df_qc_fam[df_qc_fam["mat_prefix"] == sel_fam]
-
-  with col_sh_fam1:
-    chart_card_open(f"Top Kiểu Lỗi — Dòng: {clean_emoji(sel_fam)}")
-    if not df_qc_fam.empty and "kieu_loi" in df_qc_fam.columns:
-      df_err_agg = (
-          df_qc_fam.groupby("kieu_loi")["sl_khong_dat"].sum().reset_index()
-      )
-      df_err_agg = df_err_agg[df_err_agg["kieu_loi"] != ""].sort_values(
-          by="sl_khong_dat", ascending=True
-      )
-
-      if not df_err_agg.empty:
-        fig_err_fam = go.Figure(
-            go.Bar(
-                x=df_err_agg["sl_khong_dat"],
-                y=df_err_agg["kieu_loi"],
-                orientation="h",
-                marker=dict(color=COLOR_DANGER),
-                text=[f"{v:,.0f}" for v in df_err_agg["sl_khong_dat"]],
-                textposition="outside",
-            )
-        )
-        fig_err_fam.update_layout(
-            margin=dict(l=10, r=40, t=10, b=10),
-            height=260,
-            paper_bgcolor="#FFFFFF",
-            plot_bgcolor="#FFFFFF",
-        )
-        st.plotly_chart(
-            fig_err_fam,
-            use_container_width=True,
-            config={"displayModeBar": False},
-            key=f"coois_fig_err_fam_{phan_he_code}",
-        )
-      else:
-        st.success("🎉 Không ghi nhận kiểu sai hỏng nào!")
-    else:
-      st.success("🎉 Không có ca báo lỗi nào thuộc dòng SP này!")
-    chart_card_close()
-
-  with col_sh_fam2:
-    chart_card_open(f"Nhật Ký Sai Hỏng Chi Tiết — Dòng: {clean_emoji(sel_fam)}")
-    if not df_qc_fam.empty:
-      df_qc_fam_disp = df_qc_fam[[
-          "ngay_kiem",
-          "nguoi_kiem",
-          "so_lot",
-          "ma_vt",
-          "ten_vt",
-          "cong_viec_con",
-          "kieu_loi",
-          "sl_khong_dat",
-      ]].copy()
-
-      # Ép kiểu ngày giờ dd/mm/yyyy HH:MM:SS
-      df_qc_fam_disp["ngay_kiem"] = pd.to_datetime(
-          df_qc_fam_disp["ngay_kiem"], errors="coerce"
-      ).dt.strftime("%d/%m/%Y %H:%M:%S")
-
-      df_qc_fam_disp.columns = [
-          "Thời Gian",
-          "Người Kiểm",
-          "Lệnh SX",
-          "Mã SP",
-          "Tên SP",
-          "Công Đoạn",
-          "Kiểu Sai Hỏng",
-          "SL Lỗi",
-      ]
-      st.dataframe(
-          df_qc_fam_disp, use_container_width=True, hide_index=True, height=230
-      )
-    else:
-      st.info("💡 Chưa có nhật ký báo lỗi cho dòng sản phẩm này.")
-    chart_card_close()
-
-  # ================= XUẤT ẢNH MATPLOTLIB ẨN CHO EXCEL =================
-  fig1_mpl, ax_m1 = plt.subplots(figsize=(8, 3.2), dpi=200)
-  ax_m1_twin = ax_m1.twinx()
-  ax_m1.bar(
-      np.arange(12) - 0.18,
-      m_comp_orders,
-      width=0.35,
-      color=COLOR_PRIMARY,
-      label="Lệnh HT",
-  )
-  ax_m1.bar(
-      np.arange(12) - 0.18,
-      m_uncomp_orders,
-      width=0.35,
-      bottom=m_comp_orders,
-      color=COLOR_DANGER,
-      label="Lệnh Chưa Xong",
-  )
-  ax_m1_twin.bar(
-      np.arange(12) + 0.18,
-      m_comp_qty,
-      width=0.35,
-      color=COLOR_SUCCESS,
-      label="SL HT",
-  )
-  ax_m1_twin.bar(
-      np.arange(12) + 0.18,
-      m_uncomp_qty,
-      width=0.35,
-      bottom=m_comp_qty,
-      color=COLOR_WARNING,
-      label="SL Chưa Xong",
-  )
-  ax_m1.set_title(f"TIẾN ĐỘ SẢN XUẤT - {title_clean}", fontweight="bold")
-  ax_m1.set_xticks(np.arange(12))
-  ax_m1.set_xticklabels(months_labels)
-  ax_m1_twin.set_yscale("symlog", linthresh=100)
-  plt.close(fig1_mpl)
-
-  fig2_mpl, ax_m2 = plt.subplots(figsize=(4, 3.2), dpi=200)
-  ax_m2.set_aspect("equal")
-  if tot_qty_all > 0:
-    ax_m2.pie(
-        [deliv_qty_all, rem_qty_kpi],
-        labels=["Hoàn thành", "Chưa xong"],
-        colors=[COLOR_SUCCESS, COLOR_WARNING],
-        autopct="%1.1f%%",
-        startangle=140,
-        wedgeprops=dict(width=0.35, edgecolor="white"),
-    )
-  ax_m2.set_title("TỶ LỆ HOÀN THÀNH TỔNG QUAN", fontweight="bold")
-  plt.close(fig2_mpl)
-
-  fig3_mpl, ax_m3 = plt.subplots(figsize=(6, 3.0), dpi=200)
-  ax_m3.bar(np.arange(12), m3_qty, width=0.45, color=COLOR_PRIMARY)
-  ax_m3.set_xticks(np.arange(12))
-  ax_m3.set_xticklabels(months_labels)
-  ax_m3.set_yscale("symlog", linthresh=100)
-  ax_m3.set_title(f"SẢN LƯỢNG - DÒNG: {clean_emoji(sel_fam)}", fontweight="bold")
-  plt.close(fig3_mpl)
-
-  fig4_mpl, ax_m4 = plt.subplots(figsize=(6, 3.0), dpi=200)
-  ax_m4.bar(np.arange(len(fams_x)), deliv_fams, width=0.45, color=bar_colors)
-  ax_m4.set_xticks(np.arange(len(fams_x)))
-  ax_m4.set_xticklabels(fams_x)
-  ax_m4.set_yscale("symlog", linthresh=100)
-  ax_m4.set_title("TỔNG SẢN LƯỢNG CẢ NĂM CÁC MÃ ĐẦU 5", fontweight="bold")
-  plt.close(fig4_mpl)
-
-  # ================= BẢNG SỐ LIỆU TỔNG HỢP & NÚT EXCEL =================
-  pct_orders_m = [
-      ((m_comp_orders[i] / m_tot_orders[i]) * 100.0)
-      if m_tot_orders[i] > 0
-      else 0.0
-      for i in range(12)
-  ]
-  pct_qty_m = [
-      ((m_comp_qty[i] / (m_comp_qty[i] + m_uncomp_qty[i])) * 100.0)
-      if (m_comp_qty[i] + m_uncomp_qty[i]) > 0
-      else 0.0
-      for i in range(12)
-  ]
-  total_m3 = sum(m3_qty)
-  pct_fam_contrib = [
-      ((m3_qty[i] / total_m3) * 100.0) if total_m3 > 0 else 0.0
-      for i in range(12)
-  ]
-  total_yr = sum(deliv_fams)
-  pct_yr_share = [
-      ((v / total_yr) * 100.0) if total_yr > 0 else 0.0 for v in deliv_fams
-  ]
-
-  df_monthly_summary = pd.DataFrame({
-      "Tháng": months_labels,
-      "Lệnh Hoàn Thành": m_comp_orders,
-      "Lệnh Chưa Xong": m_uncomp_orders,
-      "Tỷ Lệ HT Lệnh (%)": pct_orders_m,
-      "SL Hoàn Thành": [int(v) for v in m_comp_qty],
-      "SL Chưa Xong": [int(v) for v in m_uncomp_qty],
-      "Tỷ Lệ HT SL (%)": pct_qty_m,
-  })
-  df_plan_summary = pd.DataFrame({
-      "Chỉ Tiêu": [
-          "Tổng Kế Hoạch",
-          "Đã Giao Hoàn Thành",
-          "Còn Lại Chưa Xong",
-      ],
-      "Số Lượng": [
-          int(tot_qty_all),
-          int(deliv_qty_all),
-          int(rem_qty_kpi),
-      ],
-      "Tỷ Lệ Cơ Cấu (%)": [
-          100.0,
-          (deliv_qty_all / tot_qty_all * 100.0) if tot_qty_all > 0 else 0.0,
-          (rem_qty_kpi / tot_qty_all * 100.0) if tot_qty_all > 0 else 0.0,
-      ],
-  })
-  df_family_summary = pd.DataFrame({
-      "Tháng": months_labels,
-      f"SL Sản Xuất ({sel_fam})": [int(v) for v in m3_qty],
-      "Tỷ Lệ Đóng Góp Tháng (%)": pct_fam_contrib,
-  })
-  df_year_summary = pd.DataFrame({
-      "Mã / Dòng SP": fams_x,
-      "Tổng SL Hoàn Thành Cả Năm": [int(v) for v in deliv_fams],
-      "Tỷ Lệ Cơ Cấu (%)": pct_yr_share,
-  })
-
-  st.markdown(
-      "<hr style='margin: 8px 0 18px 0; border-color: #E4E8F0;'>",
-      unsafe_allow_html=True,
-  )
-  col_hdr, col_btn = st.columns([2.5, 1.2])
-  with col_hdr:
-    render_section_heading(
-        "📑 Bảng Số Liệu Tổng Hợp & Tỷ Lệ Hiệu Chỉnh —"
-        f" {title_clean.upper()}"
-    )
-  excel_bytes = generate_print_ready_excel(
-      phan_he_code,
-      title_clean,
-      tu_date,
-      den_date,
-      df_monthly_summary,
-      df_plan_summary,
-      df_family_summary,
-      df_year_summary,
-      fig1_mpl,
-      fig2_mpl,
-      fig3_mpl,
-      fig4_mpl,
-  )
-  with col_btn:
-    st.download_button(
-        label="📥 XUẤT BÁO CÁO EXCEL CHUYÊN NGHIỆP",
-        data=excel_bytes,
-        file_name=(
-            f"BaoCao_EMIC_{phan_he_code}_{datetime.now().strftime('%Y%m%d')}.xlsx"
-        ),
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        type="primary",
-    )
-
-  t_col1, t_col2 = st.columns([1.6, 1.0])
-  with t_col1:
-    st.markdown("##### 1. Tiến Độ Sản Xuất Theo Tháng")
-    styled_monthly = (
-        df_monthly_summary.style.background_gradient(
-            subset=["Lệnh Hoàn Thành"], cmap="Blues"
-        )
-        .background_gradient(subset=["Lệnh Chưa Xong"], cmap="Reds")
-        .background_gradient(subset=["SL Hoàn Thành"], cmap="Greens")
-        .background_gradient(subset=["SL Chưa Xong"], cmap="Oranges")
-    )
-    st.dataframe(
-        styled_monthly,
-        column_config={
-            "Tỷ Lệ HT Lệnh (%)": st.column_config.ProgressColumn(
-                "Tỷ Lệ HT Lệnh", format="%.1f%%", min_value=0, max_value=100
-            ),
-            "Tỷ Lệ HT SL (%)": st.column_config.ProgressColumn(
-                "Tỷ Lệ HT SL", format="%.1f%%", min_value=0, max_value=100
-            ),
-            "SL Hoàn Thành": st.column_config.NumberColumn(
-                "SL Hoàn Thành", format="%d"
-            ),
-            "SL Chưa Xong": st.column_config.NumberColumn(
-                "SL Chưa Xong", format="%d"
-            ),
-        },
-        use_container_width=True,
-        hide_index=True,
-    )
-  with t_col2:
-    st.markdown("##### 2. Tổng Quan Chỉ Tiêu Kế Hoạch")
-    styled_plan = df_plan_summary.style.background_gradient(
-        subset=["Số Lượng"], cmap="Blues"
-    )
-    st.dataframe(
-        styled_plan,
-        column_config={
-            "Tỷ Lệ Cơ Cấu (%)": st.column_config.ProgressColumn(
-                "Tỷ Lệ Cơ Cấu", format="%.1f%%", min_value=0, max_value=100
-            ),
-            "Số Lượng": st.column_config.NumberColumn("Số Lượng", format="%d"),
-        },
-        use_container_width=True,
-        hide_index=True,
-    )
-
-  t_col3, t_col4 = st.columns([1.0, 1.0])
-  with t_col3:
-    st.markdown(f"##### 3. Chi Tiết Sản Lượng Dòng SP ({sel_fam})")
-    styled_family = df_family_summary.style.background_gradient(
-        subset=[f"SL Sản Xuất ({sel_fam})"], cmap="Purples"
-    )
-    st.dataframe(
-        styled_family,
-        column_config={
-            "Tỷ Lệ Đóng Góp Tháng (%)": st.column_config.ProgressColumn(
-                "Tỷ Lệ Đóng Góp Tháng", format="%.1f%%", min_value=0, max_value=100
-            ),
-            f"SL Sản Xuất ({sel_fam})": st.column_config.NumberColumn(
-                f"SL Sản Xuất ({sel_fam})", format="%d"
-            ),
-        },
-        use_container_width=True,
-        hide_index=True,
-    )
-  with t_col4:
-    st.markdown("##### 4. Tổng Sản Lượng Cả Năm Các Mã Đầu 5")
-    styled_year = df_year_summary.style.background_gradient(
-        subset=["Tổng SL Hoàn Thành Cả Năm"], cmap="BuGn"
-    )
-    st.dataframe(
-        styled_year,
-        column_config={
-            "Tỷ Lệ Cơ Cấu (%)": st.column_config.ProgressColumn(
-                "Tỷ Lệ Cơ Cấu", format="%.1f%%", min_value=0, max_value=100
-            ),
-            "Tổng SL Hoàn Thành Cả Năm": st.column_config.NumberColumn(
-                "Tổng SL Cả Năm", format="%d"
-            ),
-        },
-        use_container_width=True,
-        hide_index=True,
-    )
-
-
-# ================= 8. RENDER CÁC TAB COOIS MÀN HÌNH =================
+# ================= 7. RENDER CÁC TAB COOIS MÀN HÌNH =================
 with tab_co_khi:
   render_coois_tab_layout("CO_KHI", "⚙️ BÁO CÁO CƠ KHÍ (LỆNH 3012)")
 with tab_tuti:
@@ -1916,7 +1408,7 @@ with tab_cong_to:
   render_coois_tab_layout("CONG_TO", "⚡ BÁO CÁO CÔNG TƠ (LỆNH 3013, 3016)")
 
 
-# ================= 9. TAB 5: DANH SÁCH CHI TIẾT, NĂNG SUẤT & QUẢN LÝ CÔNG VIỆC CON =================
+# ================= 8. TAB 5: DANH SÁCH CHI TIẾT, NĂNG SUẤT & QUẢN LÝ CÔNG VIỆC CON =================
 with tab_danh_sach:
   render_section_heading(
       "🔍 QUẢN LÝ DANH SÁCH CHI TIẾT VẬT TƯ, LỆNH SẢN XUẤT, NĂNG SUẤT & CÔNG"
