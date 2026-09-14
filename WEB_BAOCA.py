@@ -130,39 +130,14 @@ st.markdown(
         font-size: 13.5px !important; height: 44px !important; border-radius: 12px !important;
         border: 2px solid #CBD5E1 !important; font-weight: 700 !important; background-color: #FFFFFF !important; color: #0F172A !important;
     }
-    label { font-size: 11.5px !important; color: #475569 !important; font-weight: 800 !important; text-transform: uppercase; }
-
-    /* Sửa chữ trong ô tải ảnh bị bé/che do CSS label chung ở trên */
-    .stFileUploader label, [data-testid="stFileUploader"] label {
-        font-size: 12.5px !important; text-transform: none !important; white-space: normal !important;
+    [data-testid="stWidgetLabel"] p, [data-testid="stWidgetLabel"] {
+        font-size: 11.5px !important; color: #475569 !important; font-weight: 800 !important; text-transform: uppercase;
     }
+
+    /* Ô tải ảnh: không ép style vào label/nút nội bộ của Streamlit nữa (khó kiểm soát,
+       hay bị lệch phiên bản). Chỉ đảm bảo khung đủ rộng, không cắt chữ. */
     [data-testid="stFileUploaderDropzone"] {
-        min-height: 100px !important; padding: 14px 10px !important; overflow: visible !important; height: auto !important;
-    }
-    [data-testid="stFileUploaderDropzone"] div,
-    [data-testid="stFileUploaderDropzone"] span,
-    [data-testid="stFileUploaderDropzone"] small,
-    [data-testid="stFileUploaderDropzone"] p {
-        font-size: 11.5px !important; text-transform: none !important; white-space: normal !important;
-        overflow: visible !important; line-height: 1.35 !important;
-    }
-    [data-testid="stFileUploader"] button {
-        height: auto !important; min-height: 34px !important; white-space: nowrap !important;
-        padding: 6px 14px !important; font-size: 12px !important; text-transform: none !important;
-    }
-
-    /* Sửa nút "BỘ LỌC TÌM KIẾM" bị che chữ */
-    [data-testid="stExpander"] {
-        border-radius: 14px !important; border: 2px solid #CBD5E1 !important;
-        background-color: #FFFFFF !important; overflow: hidden !important; margin-bottom: 10px !important;
-    }
-    [data-testid="stExpander"] summary {
-        min-height: 46px !important; padding: 10px 14px !important; display: flex !important;
-        align-items: center !important; gap: 8px !important;
-    }
-    [data-testid="stExpander"] summary p, .streamlit-expanderHeader p {
-        font-size: 13px !important; font-weight: 800 !important; color: #1E293B !important;
-        margin: 0 !important; white-space: normal !important; overflow: visible !important; text-transform: none !important;
+        overflow: visible !important;
     }
 
     div.stButton > button[kind="primary"] {
@@ -170,6 +145,15 @@ st.markdown(
         color: white !important; font-size: 16px !important; min-height: 52px !important;
         border-radius: 14px !important; border: none !important; font-weight: 900 !important;
         box-shadow: 0 8px 20px rgba(255, 75, 43, 0.4) !important;
+    }
+    div.stButton > button:not([kind="primary"]) {
+        background-color: #FFFFFF !important; border: 2px solid #CBD5E1 !important; border-radius: 12px !important;
+        font-weight: 800 !important; font-size: 13px !important; color: #1E293B !important; min-height: 44px !important;
+        text-transform: none !important; white-space: normal !important;
+    }
+    .filter-box {
+        background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px;
+        padding: 12px; margin-top: 8px; margin-bottom: 8px;
     }
 
     .mobile-card {
@@ -359,7 +343,15 @@ is_qc_dau_vao = "Vật tư" in loai_qc_option
 today = date.today()
 first_day_of_month = date(today.year, today.month, 1)
 
-with st.expander("🔍 BỘ LỌC TÌM KIẾM", expanded=False):
+if "show_filters" not in st.session_state:
+  st.session_state.show_filters = False
+
+toggle_label = ("🔽 Ẩn bộ lọc" if st.session_state.show_filters else "▶️ Bộ lọc")
+if st.button(toggle_label, use_container_width=True, key="btn_toggle_filters"):
+  st.session_state.show_filters = not st.session_state.show_filters
+
+if st.session_state.show_filters:
+  st.markdown("<div class='filter-box'>", unsafe_allow_html=True)
   col_d1, col_d2 = st.columns(2)
   with col_d1:
     tu_date = st.date_input(
@@ -402,6 +394,15 @@ with st.expander("🔍 BỘ LỌC TÌM KIẾM", expanded=False):
           index=option_index(trangthai_opts, get_setting("filter_trang_thai_sx", "Tất cả")),
       )
       set_setting("filter_trang_thai_sx", filter_trang_thai_sx)
+  st.markdown("</div>", unsafe_allow_html=True)
+else:
+  # Bộ lọc đang ẩn: vẫn cần gán giá trị mặc định để phần code phía dưới chạy được
+  tu_date = first_day_of_month
+  den_date = today
+  status_filter = get_setting("status_filter_dv", "Chưa kiểm")
+  filter_xuong = get_setting("filter_xuong", "Tất cả")
+  filter_loai_sp = get_setting("filter_loai_sp", "Tất cả")
+  filter_trang_thai_sx = get_setting("filter_trang_thai_sx", "Tất cả")
 
 search_kw = st.text_input(
     "🔎 Tìm kiếm nhanh:",
@@ -433,25 +434,16 @@ def load_qc_data(is_dau_vao, tu_d, den_d):
           conn,
           params=(tu_iso, den_iso),
       )
-
-    try:
-      target_type = "DAU_VAO" if is_dau_vao else "SAN_XUAT"
-      df_rep = pd.read_sql_query(
-          "SELECT so_lot FROM tb_qc_dau_vao WHERE loai_qc = ?",
-          conn,
-          params=(target_type,),
-      )
-      checked_set = set(df_rep["so_lot"].dropna().unique())
-    except Exception:
-      checked_set = set()
-
     conn.close()
-    return df_raw, checked_set
+    return df_raw
   except Exception:
-    return pd.DataFrame(), set()
+    return pd.DataFrame()
 
 
-df_raw, checked_set = load_qc_data(is_qc_dau_vao, tu_date, den_date)
+df_raw = load_qc_data(is_qc_dau_vao, tu_date, den_date)
+
+# Các mã UD của SAP coi là "đã xác nhận / đã kiểm" cho vật tư đầu vào
+UD_DA_XAC_NHAN = {"01", "02", "03"}
 
 filtered_items = []
 
@@ -469,7 +461,10 @@ if not df_raw.empty:
       ma_vt = str(r.get("ma_vt", "")).strip()
       ten_vt = str(r.get("ten_vt", "")).strip()
       ncc = str(r.get("ncc", "")).strip()
-      is_checked = so_lot in checked_set
+      xac_nhan_sap = str(r.get("xac_nhan_sap", "")).strip()
+      # Trạng thái vật tư lấy theo mã UD của SAP: 01/02/03 = đã kiểm,
+      # rỗng / "Chưa XN" hoặc bất kỳ giá trị nào khác = chưa kiểm
+      is_checked = xac_nhan_sap in UD_DA_XAC_NHAN
 
       if status_filter == "Chưa kiểm" and is_checked:
         continue
@@ -505,7 +500,10 @@ if not df_raw.empty:
       ten_tp = str(r.get("ten_tp", "")).strip()
       phan_he = str(r.get("phan_he", "")).strip()
       trang_thai_sx = str(r.get("trang_thai", "")).strip()
-      is_checked = so_lenh in checked_set
+      sl_tong_sx = float(r.get("sl_tong", 0.0) or 0.0)
+      sl_ht_sx = float(r.get("sl_ht", 0.0) or 0.0)
+      # Trạng thái "đã làm" của lệnh SX: đã hoàn thành đủ số lượng (sl_ht >= sl_tong)
+      is_checked = sl_tong_sx > 0 and sl_ht_sx >= sl_tong_sx
 
       if filter_xuong != "Tất cả":
         if "Cơ khí" in filter_xuong and phan_he != "CO_KHI":
@@ -651,11 +649,8 @@ if selected_opt != options_list[0]:
     )
 
   st.markdown("<hr style='border-color:#CBD5E1;'>", unsafe_allow_html=True)
-  img_col1, img_col2 = st.columns(2)
-  with img_col1:
-    img1_file = st.file_uploader("📷 Chụp / Tải Ảnh 1", type=["png", "jpg", "jpeg"])
-  with img_col2:
-    img2_file = st.file_uploader("📷 Chụp / Tải Ảnh 2", type=["png", "jpg", "jpeg"])
+  img1_file = st.file_uploader("📷 Chụp / Tải Ảnh 1", type=["png", "jpg", "jpeg"])
+  img2_file = st.file_uploader("📷 Chụp / Tải Ảnh 2", type=["png", "jpg", "jpeg"])
 
   if st.button("🚀 GỬI BÁO CÁO VỀ HỆ THỐNG", type="primary", use_container_width=True):
     if not nguoi_kiem_input.strip():
