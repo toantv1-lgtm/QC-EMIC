@@ -19,18 +19,6 @@ def get_db_connection():
   return conn
 
 
-def format_to_ddmmyyyy(val):
-  if not val or pd.isna(val):
-    return ""
-  try:
-    dt = pd.to_datetime(val, dayfirst=True, errors="coerce")
-    if pd.notna(dt):
-      return dt.strftime("%d/%m/%Y")
-  except Exception:
-    pass
-  return str(val).split()[0]
-
-
 # ================= 2. CẤU HÌNH GIAO DIỆN MOBILE =================
 st.set_page_config(
     page_title="EMIC QC Mobile Pro",
@@ -144,6 +132,7 @@ def init_db():
             )
         """)
 
+    # Khởi tạo công việc con mặc định nếu chưa có
     cursor.execute("SELECT COUNT(*) FROM tb_dm_cong_viec")
     if cursor.fetchone()[0] == 0:
       default_tasks = [
@@ -255,11 +244,9 @@ first_day_of_month = date(today.year, today.month, 1)
 
 col_d1, col_d2 = st.columns(2)
 with col_d1:
-  tu_date = st.date_input(
-      "Từ ngày:", first_day_of_month, format="DD/MM/YYYY"
-  )
+  tu_date = st.date_input("Từ ngày:", first_day_of_month)
 with col_d2:
-  den_date = st.date_input("Đến ngày:", today, format="DD/MM/YYYY")
+  den_date = st.date_input("Đến ngày:", today)
 
 if is_qc_dau_vao:
   col_flt1, col_flt2 = st.columns(2)
@@ -272,7 +259,7 @@ if is_qc_dau_vao:
         "🔎 Tìm kiếm nhanh:", "", placeholder="Mã/Tên/Lot/NCC..."
     )
 else:
-  col_f1, col_f2, col_f3 = st.columns(3)
+  col_f1, col_f2, col_f3, col_f4 = st.columns(4)
   with col_f1:
     filter_xuong = st.selectbox(
         "Xưởng / Phân hệ:",
@@ -287,6 +274,10 @@ else:
         "Loại sản phẩm:",
         ["Tất cả", "Bán thành phẩm (Đầu 4)", "Sản phẩm (Đầu 5)"],
     )
+  with col_f4:
+    filter_trang_thai_sx = st.selectbox(
+        "Trạng thái SX:", ["Tất cả", "Hoàn thành", "Đang SX", "Chưa SX"]
+    )
   search_kw = st.text_input(
       "🔎 Tìm kiếm nhanh:", "", placeholder="Số lệnh/Mã/Tên SP..."
   )
@@ -294,7 +285,7 @@ else:
 st.markdown("</div>", unsafe_allow_html=True)
 
 
-# ================= 4. NẠP DỮ LIỆU TỪ CSDL BẰNG CHUẨN ISO YYYY-MM-DD =================
+# ================= 4. NẠP DỮ LIỆU TỪ CSDL =================
 @st.cache_data(ttl=5)
 def load_qc_data(is_dau_vao, tu_d, den_d):
   tu_iso = tu_d.strftime("%Y-%m-%d 00:00:00")
@@ -368,15 +359,12 @@ if not df_raw.empty:
         ):
           continue
 
-      raw_ngay = r.get("ngay_ve_dt", r.get("ngay_ve", ""))
-      ngay_ve_str = format_to_ddmmyyyy(raw_ngay)
-
       filtered_items.append({
           "so_lot": so_lot,
           "ma_vt": ma_vt,
           "ten_vt": ten_vt,
           "ncc": ncc,
-          "ngay_ve": ngay_ve_str,
+          "ngay_ve": str(r.get("ngay_ve_dt", "")).split()[0],
           "tong_sl": float(r.get("ft_qty", 0.0) or 0.0),
           "co_mau": float(r.get("by_sample", 5.0) or 5.0),
           "phan_he": "DAU_VAO",
@@ -388,6 +376,7 @@ if not df_raw.empty:
       ma_tp = str(r.get("ma_tp", "")).strip()
       ten_tp = str(r.get("ten_tp", "")).strip()
       phan_he = str(r.get("phan_he", "")).strip()
+      trang_thai_sx = str(r.get("trang_thai", "")).strip()
       is_checked = so_lenh in checked_set
 
       if filter_xuong != "Tất cả":
@@ -397,6 +386,12 @@ if not df_raw.empty:
           continue
         if "Công tơ" in filter_xuong and phan_he != "CONG_TO":
           continue
+
+      if (
+          filter_trang_thai_sx != "Tất cả"
+          and trang_thai_sx != filter_trang_thai_sx
+      ):
+        continue
 
       if status_filter == "Chưa làm" and is_checked:
         continue
@@ -421,19 +416,19 @@ if not df_raw.empty:
         ):
           continue
 
-      raw_ngay = r.get("ngay_lenh_dt", r.get("ngay_lenh", ""))
-      ngay_ve_str = format_to_ddmmyyyy(raw_ngay)
-
       filtered_items.append({
           "so_lot": so_lenh,
           "ma_vt": ma_tp,
           "ten_vt": ten_tp,
           "ncc": f"Xưởng {phan_he}" if phan_he else "Xưởng Sản Xuất",
-          "ngay_ve": ngay_ve_str,
+          "ngay_ve": str(r.get("ngay_lenh_dt", r.get("ngay_lenh", ""))).split()[
+              0
+          ],
           "tong_sl": float(r.get("sl_tong", 0.0) or 0.0),
           "co_mau": float(r.get("sl_tong", 10.0) or 10.0),
           "phan_he": phan_he if phan_he else "CO_KHI",
           "is_checked": is_checked,
+          "trang_thai_sx": trang_thai_sx,
       })
 
 options_list = ["-- Chạm để chọn đối tượng nhập báo cáo --"] + [
@@ -470,6 +465,7 @@ if selected_opt != options_list[0]:
       unsafe_allow_html=True,
   )
 
+  # BỔ SUNG Ô CHỌN CÔNG VIỆC CON / CÔNG ĐOẠN
   sub_task_list = get_sub_tasks(selected_item["phan_he"]) + [
       "Công việc khác / Nhập tay"
   ]
