@@ -103,7 +103,7 @@ st.set_page_config(
     page_title="EMIC - Dashboard Tổng Hợp",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 st.markdown(
@@ -156,9 +156,9 @@ st.markdown(
         .main .block-container, div[data-testid="stAppViewBlockContainer"] {
             padding-top: 1.2rem !important;
             padding-bottom: 3rem !important;
-            padding-left: 2rem !important;
-            padding-right: 2rem !important;
-            max-width: 1720px !important;
+            padding-left: 1.5rem !important;
+            padding-right: 1.5rem !important;
+            max-width: 100% !important;
             margin: 0 auto !important;
         }
 
@@ -602,9 +602,11 @@ first_day_of_month = date(today.year, today.month, 1)
 
 col_f1, col_f2, col_f3 = st.columns([1.5, 1.5, 1.2])
 with col_f1:
-  tu_date = st.date_input("Từ ngày:", first_day_of_month)
+  tu_date = st.date_input(
+      "Từ ngày:", first_day_of_month, format="DD/MM/YYYY"
+  )
 with col_f2:
-  den_date = st.date_input("Đến ngày:", today)
+  den_date = st.date_input("Đến ngày:", today, format="DD/MM/YYYY")
 with col_f3:
   st.markdown("<div style='height: 25px;'></div>", unsafe_allow_html=True)
   if st.button("🔄 CẬP NHẬT BÁO CÁO", use_container_width=True, type="primary"):
@@ -618,8 +620,12 @@ with st.sidebar:
       unsafe_allow_html=True,
   )
   st.info("💡 Bạn cũng có thể chọn ngày ở đây:")
-  sb_tu = st.date_input("Từ ngày (Sidebar)", tu_date, key="sb_tu")
-  sb_den = st.date_input("Đến ngày (Sidebar)", den_date, key="sb_den")
+  sb_tu = st.date_input(
+      "Từ ngày (Sidebar)", tu_date, key="sb_tu", format="DD/MM/YYYY"
+  )
+  sb_den = st.date_input(
+      "Đến ngày (Sidebar)", den_date, key="sb_den", format="DD/MM/YYYY"
+  )
   if sb_tu != tu_date or sb_den != den_date:
     tu_date, den_date = sb_tu, sb_den
 
@@ -2233,7 +2239,9 @@ with tab_danh_sach:
           df_display = pd.DataFrame()
           df_display["STT"] = np.arange(1, len(df_filtered) + 1)
           df_display["Ngày kiểm"] = df_filtered["Ngay_Format"].values
-          df_display["Thời gian"] = df_filtered["ngay_kiem"].values
+          df_display["Thời gian"] = df_filtered["ngay_kiem_dt"].dt.strftime(
+              "%d/%m/%Y %H:%M:%S"
+          ).values
           df_display["Người kiểm tra"] = df_filtered["nguoi_kiem"].values
           df_display["Loại QC"] = df_filtered["loai_qc"].map(
               {"DAU_VAO": "QC Đầu Vào", "SAN_XUAT": "QC Sản Xuất"}
@@ -2417,8 +2425,12 @@ with tab_danh_sach:
               )
 
           st.markdown("##### 📋 Danh Sách Ca Báo Lỗi Chi Tiết")
+          df_sh_view = df_sh_view.copy()
+          df_sh_view["ngay_kiem_fmt"] = pd.to_datetime(
+              df_sh_view["ngay_kiem"], errors="coerce"
+          ).dt.strftime("%d/%m/%Y %H:%M:%S")
           df_sh_display = df_sh_view[[
-              "ngay_kiem",
+              "ngay_kiem_fmt",
               "nguoi_kiem",
               "so_lot",
               "ma_vt",
