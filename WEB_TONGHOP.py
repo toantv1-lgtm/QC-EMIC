@@ -604,9 +604,11 @@ first_day_of_month = date(today.year, today.month, 1)
 
 col_f1, col_f2, col_f3 = st.columns([1.5, 1.5, 1.2])
 with col_f1:
-  tu_date = st.date_input("Từ ngày:", first_day_of_month)
+  tu_date = st.date_input(
+      "Từ ngày:", first_day_of_month, format="DD/MM/YYYY"
+  )
 with col_f2:
-  den_date = st.date_input("Đến ngày:", today)
+  den_date = st.date_input("Đến ngày:", today, format="DD/MM/YYYY")
 with col_f3:
   st.markdown("<div style='height: 25px;'></div>", unsafe_allow_html=True)
   if st.button("🔄 CẬP NHẬT BÁO CÁO", use_container_width=True, type="primary"):
@@ -620,8 +622,12 @@ with st.sidebar:
       unsafe_allow_html=True,
   )
   st.info("💡 Bạn cũng có thể chọn ngày ở đây:")
-  sb_tu = st.date_input("Từ ngày (Sidebar)", tu_date, key="sb_tu")
-  sb_den = st.date_input("Đến ngày (Sidebar)", den_date, key="sb_den")
+  sb_tu = st.date_input(
+      "Từ ngày (Sidebar)", tu_date, format="DD/MM/YYYY", key="sb_tu"
+  )
+  sb_den = st.date_input(
+      "Đến ngày (Sidebar)", den_date, format="DD/MM/YYYY", key="sb_den"
+  )
   if sb_tu != tu_date or sb_den != den_date:
     tu_date, den_date = sb_tu, sb_den
 
@@ -665,12 +671,8 @@ with tab_vat_tu:
 
     for _, r in df_qa32.iterrows():
       try:
-        m_idx = (
-            datetime.strptime(
-                str(r["ngay_ve_dt"]).split()[0], "%Y-%m-%d"
-            ).month
-            - 1
-        )
+        dt_val = pd.to_datetime(r["ngay_ve_dt"], errors="coerce")
+        m_idx = dt_val.month - 1 if pd.notna(dt_val) else 0
       except Exception:
         m_idx = 0
       if not (0 <= m_idx < 12):
@@ -1130,14 +1132,12 @@ def render_coois_tab_layout(phan_he_code, title_text):
   except Exception:
     df_qc_sub = pd.DataFrame()
 
-  # Nhận diện an toàn cột chứa Số lệnh sản xuất (so_lenh hoặc lenh_sx)
   col_order = (
       "so_lenh"
       if "so_lenh" in df_sub.columns
       else ("lenh_sx" if "lenh_sx" in df_sub.columns else "")
   )
 
-  # Ghép nối Lô/Lệnh COOIS với Dòng sản phẩm (mat_prefix)
   if not df_qc_sub.empty and not df_sub.empty:
     if col_order and "mat_prefix" in df_sub.columns:
       order_map = dict(
@@ -1178,12 +1178,8 @@ def render_coois_tab_layout(phan_he_code, title_text):
 
   for _, r in df_sub.iterrows():
     try:
-      m_idx = (
-          datetime.strptime(
-              str(r["ngay_lenh_dt"]).split()[0], "%Y-%m-%d"
-          ).month
-          - 1
-      )
+      dt_val = pd.to_datetime(r["ngay_lenh_dt"], errors="coerce")
+      m_idx = dt_val.month - 1 if pd.notna(dt_val) else 0
     except Exception:
       m_idx = 0
     if not (0 <= m_idx < 12):
@@ -1410,7 +1406,6 @@ def render_coois_tab_layout(phan_he_code, title_text):
     )
     chart_card_close()
 
-  # HÀNG 2: BỘ LỌC DÒNG SP
   sub_5 = (
       df_sub[
           df_sub["ma_tp"]
@@ -1578,7 +1573,6 @@ def render_coois_tab_layout(phan_he_code, title_text):
     )
     chart_card_close()
 
-  # HÀNG 3: BỔ SUNG PHÂN TÍCH SAI HỎNG CHO DÒNG SẢN PHẨM ĐÃ CHỌN
   st.markdown(
       f"#### 🚨 PHÂN TÍCH SAI HỎNG DÒNG SẢN PHẨM: {clean_emoji(sel_fam)}"
   )
@@ -1640,6 +1634,12 @@ def render_coois_tab_layout(phan_he_code, title_text):
           "kieu_loi",
           "sl_khong_dat",
       ]].copy()
+
+      # Ép kiểu ngày giờ dd/mm/yyyy HH:MM:SS
+      df_qc_fam_disp["ngay_kiem"] = pd.to_datetime(
+          df_qc_fam_disp["ngay_kiem"], errors="coerce"
+      ).dt.strftime("%d/%m/%Y %H:%M:%S")
+
       df_qc_fam_disp.columns = [
           "Thời Gian",
           "Người Kiểm",
@@ -2322,6 +2322,9 @@ with tab_danh_sach:
           df_qc_logs["Ngay_Format"] = df_qc_logs["ngay_kiem_dt"].dt.strftime(
               "%d/%m/%Y"
           )
+          df_qc_logs["ThoiGian_Format"] = df_qc_logs[
+              "ngay_kiem_dt"
+          ].dt.strftime("%d/%m/%Y %H:%M:%S")
 
           chart_card_open("👨‍💼 Bộ Lọc Tính Năng Suất Làm Việc QC")
           col_flt_person, col_flt_type = st.columns([1.5, 1])
@@ -2400,7 +2403,7 @@ with tab_danh_sach:
           df_display = pd.DataFrame()
           df_display["STT"] = np.arange(1, len(df_filtered) + 1)
           df_display["Ngày kiểm"] = df_filtered["Ngay_Format"].values
-          df_display["Thời gian"] = df_filtered["ngay_kiem"].values
+          df_display["Thời gian"] = df_filtered["ThoiGian_Format"].values
           df_display["Người kiểm tra"] = df_filtered["nguoi_kiem"].values
           df_display["Loại QC"] = df_filtered["loai_qc"].map(
               {"DAU_VAO": "QC Đầu Vào", "SAN_XUAT": "QC Sản Xuất"}
@@ -2594,7 +2597,13 @@ with tab_danh_sach:
               "kieu_loi",
               "sl_khong_dat",
               "ghi_chu",
-          ]]
+          ]].copy()
+
+          # Ép kiểu ngày giờ dd/mm/yyyy HH:MM:SS
+          df_sh_display["ngay_kiem"] = pd.to_datetime(
+              df_sh_display["ngay_kiem"], errors="coerce"
+          ).dt.strftime("%d/%m/%Y %H:%M:%S")
+
           df_sh_display.columns = [
               "Thời Gian",
               "Người Kiểm",

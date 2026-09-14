@@ -19,6 +19,18 @@ def get_db_connection():
   return conn
 
 
+def format_to_ddmmyyyy(val):
+  if not val or pd.isna(val):
+    return ""
+  try:
+    dt = pd.to_datetime(val, dayfirst=True, errors="coerce")
+    if pd.notna(dt):
+      return dt.strftime("%d/%m/%Y")
+  except Exception:
+    pass
+  return str(val).split()[0]
+
+
 # ================= 2. CẤU HÌNH GIAO DIỆN MOBILE CHUẨN =================
 st.set_page_config(
     page_title="EMIC QC Mobile Pro",
@@ -27,13 +39,11 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# Khắc phục lỗi CSS: Chỉ định chính xác ô nhập liệu, không ghi đè Icon của Streamlit
 st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
     
-    /* Chỉ áp dụng Font cho văn bản thông thường */
     .stApp, div[data-testid="stMarkdownContainer"] p, div[data-testid="stWidgetLabel"] label {
         font-family: 'Plus Jakarta Sans', -apple-system, sans-serif !important;
     }
@@ -42,7 +52,6 @@ st.markdown(
     header, #MainMenu, footer { display: none !important; }
     .block-container { padding: 0.5rem 0.5rem 2rem 0.5rem !important; max-width: 100% !important; }
     
-    /* Header Công ty EMIC */
     .app-header {
         background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #EC4899 100%);
         color: white; padding: 14px 10px; border-radius: 14px; text-align: center;
@@ -53,7 +62,6 @@ st.markdown(
     .emic-dept { font-size: 13px; font-weight: 800; color: #E0E7FF; letter-spacing: 0.5px; margin-bottom: 4px; }
     .app-title { font-size: 15px; font-weight: 900; color: #FFFFFF; }
 
-    /* Định dạng ô nhập liệu không ảnh hưởng nút File Uploader */
     .stTextInput input, .stSelectbox select, .stNumberInput input {
         font-size: 13px !important; height: 42px !important; border-radius: 10px !important;
         border: 1.5px solid #CBD5E1 !important; font-weight: 700 !important; background-color: #FFFFFF !important;
@@ -75,7 +83,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Header Tiêu đề Công ty & Phòng QC
 st.markdown(
     """
     <div class='app-header'>
@@ -247,9 +254,11 @@ first_day_of_month = date(today.year, today.month, 1)
 with st.expander("⚙️ BỘ LỌC THỜI GIAN & ĐIỀU KIỆN TÌM KIẾM", expanded=False):
   col_d1, col_d2 = st.columns(2)
   with col_d1:
-    tu_date = st.date_input("Từ ngày:", first_day_of_month)
+    tu_date = st.date_input(
+        "Từ ngày:", first_day_of_month, format="DD/MM/YYYY"
+    )
   with col_d2:
-    den_date = st.date_input("Đến ngày:", today)
+    den_date = st.date_input("Đến ngày:", today, format="DD/MM/YYYY")
 
   if is_qc_dau_vao:
     status_filter = st.selectbox(
@@ -353,12 +362,15 @@ if not df_raw.empty:
         ):
           continue
 
+      raw_ngay = r.get("ngay_ve_dt", r.get("Created On (System Date)", ""))
+      ngay_ve_str = format_to_ddmmyyyy(raw_ngay)
+
       filtered_items.append({
           "so_lot": so_lot,
           "ma_vt": ma_vt,
           "ten_vt": ten_vt,
           "ncc": ncc,
-          "ngay_ve": str(r.get("ngay_ve_dt", "")).split()[0],
+          "ngay_ve": ngay_ve_str,
           "tong_sl": float(r.get("ft_qty", 0.0) or 0.0),
           "co_mau": float(r.get("by_sample", 5.0) or 5.0),
           "phan_he": "DAU_VAO",
@@ -403,14 +415,17 @@ if not df_raw.empty:
         ):
           continue
 
+      raw_ngay = r.get(
+          "ngay_lenh_dt", r.get("Start date (sched)", r.get("ngay_lenh", ""))
+      )
+      ngay_ve_str = format_to_ddmmyyyy(raw_ngay)
+
       filtered_items.append({
           "so_lot": so_lenh,
           "ma_vt": ma_tp,
           "ten_vt": ten_tp,
           "ncc": f"Xưởng {phan_he}" if phan_he else "Xưởng Sản Xuất",
-          "ngay_ve": str(r.get("ngay_lenh_dt", r.get("ngay_lenh", ""))).split()[
-              0
-          ],
+          "ngay_ve": ngay_ve_str,
           "tong_sl": float(r.get("sl_tong", 0.0) or 0.0),
           "co_mau": float(r.get("sl_tong", 10.0) or 10.0),
           "phan_he": phan_he if phan_he else "CO_KHI",
