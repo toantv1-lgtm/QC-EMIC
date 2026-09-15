@@ -14,7 +14,6 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
-import streamlit_antd_components as sac
 
 # ================= 1. KẾT NỐI CSDL AN TOÀN & TỰ ĐỘNG CẬP NHẬT CẤU TRÚC =================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -317,6 +316,40 @@ st.markdown(
             font-size: 11.5px; font-weight: 800; color: var(--text-muted);
             text-transform: uppercase; letter-spacing: 0.08em;
             margin: 0 0 10px 2px; display: flex; align-items: center; gap: 6px;
+        }
+        .nav-group-label {
+            font-size: 11px; font-weight: 800; color: var(--text-faint);
+            text-transform: uppercase; letter-spacing: 0.06em;
+            margin: 16px 0 4px 4px;
+        }
+
+        /* Menu điều hướng dạng cây ở sidebar: nút phẳng, thẳng hàng, không icon */
+        section[data-testid="stSidebar"] div.stButton > button {
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            text-align: left !important;
+            justify-content: flex-start !important;
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+            font-weight: 600 !important;
+            font-size: 13.5px !important;
+            color: var(--text) !important;
+            padding: 9px 14px !important;
+            min-height: 38px !important;
+            border-radius: 10px !important;
+            margin-bottom: 2px !important;
+            transition: background-color 0.12s ease, color 0.12s ease;
+        }
+        section[data-testid="stSidebar"] div.stButton > button:hover {
+            background-color: var(--primary-soft) !important;
+            color: var(--primary-dark) !important;
+            transform: none !important;
+        }
+        section[data-testid="stSidebar"] div.stButton > button[kind="primary"] {
+            background-color: var(--primary) !important;
+            color: #FFFFFF !important;
+            box-shadow: none !important;
+            font-weight: 700 !important;
         }
     </style>
 """,
@@ -843,49 +876,58 @@ with col_f3:
     st.rerun()
 st.markdown("</div>", unsafe_allow_html=True)
 
+if "nav_selected" not in st.session_state:
+  st.session_state.nav_selected = "1. Báo Cáo Vật Tư"
+
+
+def _nav_button(label, key):
+  is_active = st.session_state.nav_selected == label
+  if st.button(
+      label,
+      key=key,
+      use_container_width=True,
+      type="primary" if is_active else "secondary",
+  ):
+    st.session_state.nav_selected = label
+    st.rerun()
+
+
+def _nav_child_button(label, key):
+  c_spacer, c_btn = st.columns([1, 11])
+  with c_btn:
+    _nav_button(label, key)
+
+
 with st.sidebar:
   st.markdown(
-      '<div class="sidebar-heading">📚 DANH MỤC BÁO CÁO</div>',
+      '<div class="sidebar-heading">DANH MỤC BÁO CÁO</div>',
       unsafe_allow_html=True,
   )
-  nav = sac.menu(
-      [
-          sac.MenuItem("1. Báo Cáo Vật Tư", icon="clipboard-data"),
-          sac.MenuItem("2. Báo Cáo Xưởng Cơ Khí", icon="tools"),
-          sac.MenuItem("3. Báo Cáo Xưởng Công Tơ", icon="lightning-charge"),
-          sac.MenuItem("4. Báo Cáo Xưởng TU/TI", icon="cpu"),
-          sac.MenuItem(
-              "5. Báo Cáo Tổng Hợp",
-              icon="bar-chart-line",
-              type="group",
-              children=[
-                  sac.MenuItem("5.1 Danh Sách Vật Tư", icon="box-seam"),
-                  sac.MenuItem(
-                      "5.2 Danh Sách Lệnh Sản Xuất", icon="clipboard-check"
-                  ),
-                  sac.MenuItem("5.3 Sai Hỏng", icon="exclamation-triangle"),
-                  sac.MenuItem("5.4 Năng Suất", icon="person-badge"),
-              ],
-          ),
-          sac.MenuItem(
-              "6. Cài Đặt",
-              icon="gear",
-              type="group",
-              children=[
-                  sac.MenuItem("6.1 Lỗi Sai Hỏng", icon="bug"),
-                  sac.MenuItem("6.2 Công Việc Con", icon="list-task"),
-              ],
-          ),
-      ],
-      open_all=True,
-      color="indigo",
-      variant="left-bar",
-      size="md",
-      key="main_nav_menu",
-  )
+  _nav_button("1. Báo Cáo Vật Tư", "nav_1")
+  _nav_button("2. Báo Cáo Xưởng Cơ Khí", "nav_2")
+  _nav_button("3. Báo Cáo Xưởng Công Tơ", "nav_3")
+  _nav_button("4. Báo Cáo Xưởng TU/TI", "nav_4")
 
   st.markdown(
-      '<div class="sidebar-heading" style="margin-top:18px;">⚙️ CẤU HÌNH DỰ'
+      '<div class="nav-group-label">5. Báo Cáo Tổng Hợp</div>',
+      unsafe_allow_html=True,
+  )
+  _nav_child_button("5.1 Danh Sách Vật Tư", "nav_51")
+  _nav_child_button("5.2 Danh Sách Lệnh Sản Xuất", "nav_52")
+  _nav_child_button("5.3 Sai Hỏng", "nav_53")
+  _nav_child_button("5.4 Năng Suất", "nav_54")
+
+  st.markdown(
+      '<div class="nav-group-label">6. Cài Đặt</div>',
+      unsafe_allow_html=True,
+  )
+  _nav_child_button("6.1 Lỗi Sai Hỏng", "nav_61")
+  _nav_child_button("6.2 Công Việc Con", "nav_62")
+
+  nav = st.session_state.nav_selected
+
+  st.markdown(
+      '<div class="sidebar-heading" style="margin-top:18px;">CẤU HÌNH DỰ'
       " PHÒNG</div>",
       unsafe_allow_html=True,
   )
