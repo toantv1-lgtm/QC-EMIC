@@ -717,7 +717,7 @@ st.markdown(
 today = date.today()
 first_day_of_year = date(today.year, 1, 1)
 
-col_f1, col_f2, col_f3 = st.columns([1.5, 1.5, 1.2])
+col_f1, col_f2, col_f3, col_f4 = st.columns([1.3, 1.3, 1, 1.3])
 with col_f1:
   tu_date = st.date_input(
       "Từ ngày:", first_day_of_year, format="DD/MM/YYYY"
@@ -729,6 +729,124 @@ with col_f3:
   if st.button("🔄 CẬP NHẬT BÁO CÁO", use_container_width=True, type="primary"):
     st.cache_data.clear()
     st.rerun()
+with col_f4:
+  st.markdown("<div style='height: 25px;'></div>", unsafe_allow_html=True)
+  if st.button("📊 XUẤT EXCEL TOÀN BỘ", use_container_width=True):
+    st.session_state["trigger_export_all"] = True
+
+if st.session_state.get("trigger_export_all"):
+  try:
+    conn = get_db_connection()
+    tu_iso_exp = tu_date.strftime("%Y-%m-%d 00:00:00")
+    den_iso_exp = den_date.strftime("%Y-%m-%d 23:59:59")
+
+    df_exp_qa32 = pd.read_sql_query(
+        "SELECT * FROM tb_sap_qa32 WHERE ngay_ve_dt >= ? AND ngay_ve_dt <= ?",
+        conn,
+        params=(tu_iso_exp, den_iso_exp),
+    )
+    df_exp_coois = pd.read_sql_query(
+        "SELECT * FROM tb_sap_coois WHERE ngay_lenh_dt >= ? AND"
+        " ngay_lenh_dt <= ?",
+        conn,
+        params=(tu_iso_exp, den_iso_exp),
+    )
+    df_exp_qc = pd.read_sql_query(
+        "SELECT * FROM tb_qc_dau_vao WHERE ngay_kiem >= ? AND ngay_kiem <= ?"
+        " ORDER BY ngay_kiem DESC",
+        conn,
+        params=(tu_iso_exp, den_iso_exp),
+    )
+    df_exp_loai_loi = pd.read_sql_query(
+        "SELECT * FROM tb_dm_loai_loi ORDER BY phan_he, ten_loi", conn
+    )
+    df_exp_cong_viec = pd.read_sql_query(
+        "SELECT * FROM tb_dm_cong_viec ORDER BY phan_he, ten_cong_viec", conn
+    )
+    conn.close()
+
+    # Bảng tổng hợp theo tháng (sản lượng COOIS)
+    if not df_exp_coois.empty:
+      df_exp_coois_m = df_exp_coois.copy()
+      df_exp_coois_m["Tháng"] = pd.to_datetime(
+          df_exp_coois_m["ngay_lenh_dt"], errors="coerce"
+      ).dt.strftime("%m/%Y")
+      df_sum_thang = (
+          df_exp_coois_m.groupby(["Tháng", "phan_he"])
+          .agg(
+              So_Luong_Lenh=("lenh_sx", "count"),
+              Tong_SL=("sl_tong", "sum"),
+              SL_Hoan_Thanh=("sl_ht", "sum"),
+          )
+          .reset_index()
+      )
+    else:
+      df_sum_thang = pd.DataFrame()
+
+    # Bảng tổng hợp sai hỏng theo kiểu lỗi
+    if not df_exp_qc.empty:
+      df_sum_loi = (
+          df_exp_qc[df_exp_qc["kieu_loi"].astype(str).str.strip() != ""]
+          .groupby(["kieu_loi"])
+          .agg(
+              So_Luong_Loi=("sl_khong_dat", "sum"),
+              So_Ca_Bao_Loi=("id", "count"),
+          )
+          .reset_index()
+          .sort_values("So_Luong_Loi", ascending=False)
+      )
+      df_sum_ns = (
+          df_exp_qc.groupby(["nguoi_kiem"])
+          .agg(
+              So_Luot_Kiem=("id", "count"),
+              Tong_SL_Kiem=("sl_kiem", "sum"),
+              Tong_SL_Loi=("sl_khong_dat", "sum"),
+          )
+          .reset_index()
+          .sort_values("So_Luot_Kiem", ascending=False)
+      )
+    else:
+      df_sum_loi = pd.DataFrame()
+      df_sum_ns = pd.DataFrame()
+
+    buf_all = io.BytesIO()
+    with pd.ExcelWriter(buf_all, engine="openpyxl") as writer:
+      df_exp_qa32.to_excel(writer, sheet_name="QA32_ThoDuLieu", index=False)
+      df_exp_coois.to_excel(writer, sheet_name="COOIS_ThoDuLieu", index=False)
+      df_exp_qc.to_excel(writer, sheet_name="QC_BaoCao_ThoDuLieu", index=False)
+      df_sum_thang.to_excel(
+          writer, sheet_name="TongHop_SanLuongTheoThang", index=False
+      )
+      df_sum_loi.to_excel(
+          writer, sheet_name="TongHop_SaiHongTheoLoi", index=False
+      )
+      df_sum_ns.to_excel(
+          writer, sheet_name="TongHop_NangSuatNhanSu", index=False
+      )
+      df_exp_loai_loi.to_excel(
+          writer, sheet_name="DanhMuc_LoaiLoi", index=False
+      )
+      df_exp_cong_viec.to_excel(
+          writer, sheet_name="DanhMuc_CongViecCon", index=False
+      )
+
+    st.download_button(
+        label=(
+            "📥 Tải file Excel tổng hợp toàn bộ"
+            f" ({tu_date.strftime('%d/%m/%Y')} → {den_date.strftime('%d/%m/%Y')})"
+        ),
+        data=buf_all.getvalue(),
+        file_name=(
+            f"EMIC_XuatToanBo_{tu_date.strftime('%Y%m%d')}_"
+            f"{den_date.strftime('%Y%m%d')}.xlsx"
+        ),
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        type="primary",
+        key="dl_export_all",
+    )
+  except Exception as ex:
+    st.error(f"Lỗi xuất Excel tổng hợp: {ex}")
+
 st.markdown("</div>", unsafe_allow_html=True)
 
 if "nav_selected" not in st.session_state:
@@ -752,6 +870,7 @@ with st.sidebar:
       '<div class="sidebar-heading">DANH MỤC BÁO CÁO</div>',
       unsafe_allow_html=True,
   )
+  _nav_button("0. Báo Cáo Chung", "nav_0")
   _nav_button("1. Báo Cáo Vật Tư", "nav_1")
   _nav_button("2. Báo Cáo Xưởng Cơ Khí", "nav_2")
   _nav_button("3. Báo Cáo Xưởng Công Tơ", "nav_3")
@@ -810,6 +929,14 @@ render_page_header(
 # ================= 5. NAVIGATION: MENU DẠNG CÂY Ở SIDEBAR =================
 
 # ================= 6. TAB 1: BÁO CÁO VẬT TƯ (NGUYÊN BẢN CÓ ĐỦ BIỂU ĐỒ) =================
+# ================= 5B. TAB 0: BÁO CÁO CHUNG (CHỜ BỔ SUNG NỘI DUNG) =================
+if nav == "0. Báo Cáo Chung":
+  render_section_heading("📌 BÁO CÁO CHUNG")
+  st.info(
+      "💡 Trang này đang để trống, sẵn sàng bổ sung nội dung theo yêu cầu"
+      " tiếp theo của bạn."
+  )
+
 if nav == "1. Báo Cáo Vật Tư":
   if df_qa32.empty:
     st.info("💡 Chưa có dữ liệu QA32 trong khoảng thời gian đã chọn.")
@@ -2284,7 +2411,9 @@ if nav in DANH_SACH_LABELS:
         )
 
         chart_card_open("👨‍💼 Bộ Lọc Tính Năng Suất Làm Việc QC")
-        col_flt_person, col_flt_type = st.columns([1.5, 1])
+        col_flt_person, col_flt_type, col_flt_tu, col_flt_den = st.columns(
+            [1.3, 1, 1, 1]
+        )
 
         list_inspectors = ["Tất cả nhân sự"] + sorted([
             str(x).strip()
@@ -2303,6 +2432,29 @@ if nav in DANH_SACH_LABELS:
               ["Tất cả", "QC Đầu Vào (DAU_VAO)", "QC Sản Xuất (SAN_XUAT)"],
               key="ns_loai_qc",
           )
+
+        ns_min_date = df_qc_logs["ngay_kiem_dt"].min()
+        ns_max_date = df_qc_logs["ngay_kiem_dt"].max()
+        ns_default_tu = (
+            ns_min_date.date() if pd.notna(ns_min_date) else date.today()
+        )
+        ns_default_den = (
+            ns_max_date.date() if pd.notna(ns_max_date) else date.today()
+        )
+        with col_flt_tu:
+          ns_tu_ngay = st.date_input(
+              "📅 Từ ngày:",
+              ns_default_tu,
+              key="ns_tu_ngay",
+              format="DD/MM/YYYY",
+          )
+        with col_flt_den:
+          ns_den_ngay = st.date_input(
+              "📅 Đến ngày:",
+              ns_default_den,
+              key="ns_den_ngay",
+              format="DD/MM/YYYY",
+          )
         chart_card_close()
 
         df_filtered = df_qc_logs.copy()
@@ -2316,6 +2468,11 @@ if nav in DANH_SACH_LABELS:
           df_filtered = df_filtered[df_filtered["loai_qc"] == "DAU_VAO"]
         elif selected_loai_qc == "QC Sản Xuất (SAN_XUAT)":
           df_filtered = df_filtered[df_filtered["loai_qc"] == "SAN_XUAT"]
+
+        df_filtered = df_filtered[
+            (df_filtered["ngay_kiem_dt"].dt.date >= ns_tu_ngay)
+            & (df_filtered["ngay_kiem_dt"].dt.date <= ns_den_ngay)
+        ]
 
         tot_luot = len(df_filtered)
         tot_sl_kiem = (
@@ -2358,11 +2515,9 @@ if nav in DANH_SACH_LABELS:
         ])
 
         df_display = pd.DataFrame()
+        df_display["ID"] = df_filtered["id"].values
         df_display["STT"] = np.arange(1, len(df_filtered) + 1)
-        df_display["Ngày kiểm"] = df_filtered["Ngay_Format"].values
-        df_display["Thời gian"] = df_filtered["ngay_kiem_dt"].dt.strftime(
-            "%d/%m/%Y %H:%M:%S"
-        ).values
+        df_display["Ngày kiểm"] = df_filtered["ngay_kiem_dt"].dt.date.values
         df_display["Người kiểm tra"] = df_filtered["nguoi_kiem"].values
         df_display["Loại QC"] = df_filtered["loai_qc"].map(
             {"DAU_VAO": "QC Đầu Vào", "SAN_XUAT": "QC Sản Xuất"}
@@ -2379,27 +2534,122 @@ if nav in DANH_SACH_LABELS:
         df_display["Ghi chú"] = df_filtered["ghi_chu"].values
 
         st.markdown(
-            f"##### 📋 BẢNG NHẬT KÝ KIỂM TRẢ CHI TIẾT ({len(df_display):,} bản"
-            " ghi)"
+            f"##### 📋 BẢNG NHẬT KÝ KIỂM TRA CHI TIẾT ({len(df_display):,} bản"
+            " ghi) — sửa bất kỳ ô nào hoặc xoá cả dòng rồi bấm Lưu"
         )
-        st.dataframe(
+        edited_ns = st.data_editor(
             df_display,
             column_config={
-                "STT": st.column_config.NumberColumn("STT", width="small"),
+                "ID": None,
+                "STT": st.column_config.NumberColumn(
+                    "STT", width="small", disabled=True
+                ),
+                "Ngày kiểm": st.column_config.DateColumn(
+                    "Ngày kiểm", format="DD/MM/YYYY"
+                ),
+                "Loại QC": st.column_config.SelectboxColumn(
+                    "Loại QC", options=["QC Đầu Vào", "QC Sản Xuất"]
+                ),
                 "SL Kiểm": st.column_config.NumberColumn(
-                    "SL Kiểm", format="%d"
+                    "SL Kiểm", format="%d", min_value=0
                 ),
                 "SL Lỗi": st.column_config.NumberColumn(
-                    "SL Lỗi", format="%d"
+                    "SL Lỗi", format="%d", min_value=0
                 ),
                 "SL Đạt": st.column_config.NumberColumn(
-                    "SL Đạt", format="%d"
+                    "SL Đạt", format="%d", disabled=True
+                ),
+                "Kết luận": st.column_config.SelectboxColumn(
+                    "Kết luận",
+                    options=[
+                        "Đạt tiêu chuẩn (UD 01)",
+                        "Không đạt - Trả lại (UD 03)",
+                    ],
                 ),
             },
             use_container_width=True,
             hide_index=True,
+            num_rows="dynamic",
             height=450,
+            key="editor_ns_logs",
         )
+
+        if st.button(
+            "💾 Lưu Thay Đổi Nhật Ký Năng Suất",
+            type="primary",
+            key="save_ns_logs",
+        ):
+          try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            original_ids_ns = set(df_display["ID"].dropna().astype(int))
+            edited_ids_ns = set(edited_ns["ID"].dropna().astype(int))
+            n_deleted_ns = 0
+            for did in original_ids_ns - edited_ids_ns:
+              cursor.execute(
+                  "DELETE FROM tb_qc_dau_vao WHERE id = ?", (int(did),)
+              )
+              n_deleted_ns += 1
+            loai_qc_rev = {
+                "QC Đầu Vào": "DAU_VAO",
+                "QC Sản Xuất": "SAN_XUAT",
+            }
+            n_saved_ns = 0
+            for _, row in edited_ns.iterrows():
+              if pd.isna(row["ID"]):
+                continue
+              rid = int(row["ID"])
+              sl_kiem_v = (
+                  float(row["SL Kiểm"]) if pd.notna(row["SL Kiểm"]) else 0.0
+              )
+              sl_loi_v = (
+                  float(row["SL Lỗi"]) if pd.notna(row["SL Lỗi"]) else 0.0
+              )
+              sl_dat_v = max(0.0, sl_kiem_v - sl_loi_v)
+              ngay_kiem_v = row["Ngày kiểm"]
+              if pd.isna(ngay_kiem_v):
+                ngay_kiem_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+              else:
+                time_part = datetime.now().time()
+                ngay_kiem_str = datetime.combine(
+                    ngay_kiem_v
+                    if not isinstance(ngay_kiem_v, str)
+                    else pd.to_datetime(ngay_kiem_v).date(),
+                    time_part,
+                ).strftime("%Y-%m-%d %H:%M:%S")
+              cursor.execute(
+                  "UPDATE tb_qc_dau_vao SET nguoi_kiem = ?, loai_qc = ?,"
+                  " so_lot = ?, ma_vt = ?, ten_vt = ?, ncc = ?,"
+                  " cong_viec_con = ?, sl_kiem = ?, sl_khong_dat = ?,"
+                  " sl_dat = ?, ket_luan = ?, ghi_chu = ?, ngay_kiem = ?"
+                  " WHERE id = ?",
+                  (
+                      str(row["Người kiểm tra"] or "").strip(),
+                      loai_qc_rev.get(row["Loại QC"], "SAN_XUAT"),
+                      str(row["Lô / Lệnh SX"] or "").strip(),
+                      str(row["Mã mặt hàng"] or "").strip(),
+                      str(row["Tên mặt hàng"] or "").strip(),
+                      str(row["Đơn vị / NCC"] or "").strip(),
+                      str(row["Công việc con"] or "").strip(),
+                      sl_kiem_v,
+                      sl_loi_v,
+                      sl_dat_v,
+                      str(row["Kết luận"] or "").strip(),
+                      str(row["Ghi chú"] or "").strip(),
+                      ngay_kiem_str,
+                      rid,
+                  ),
+              )
+              n_saved_ns += 1
+            conn.commit()
+            conn.close()
+            st.success(
+                f"✅ Đã lưu {n_saved_ns} bản ghi, xoá {n_deleted_ns} bản ghi!"
+            )
+            st.cache_data.clear()
+            st.rerun()
+          except Exception as ex:
+            st.error(f"Lỗi lưu thay đổi: {ex}")
 
         buf_ns = io.BytesIO()
         with pd.ExcelWriter(buf_ns, engine="openpyxl") as writer:
@@ -2436,12 +2686,46 @@ if nav in DANH_SACH_LABELS:
       conn.close()
 
       if not df_defects.empty:
+        # Ghép "Dòng sản phẩm" (mat_prefix) từ COOIS để lọc đúng dòng SP
+        order_map_sh, code_map_sh = {}, {}
+        if not df_coois.empty and "mat_prefix" in df_coois.columns:
+          if "lenh_sx" in df_coois.columns:
+            order_map_sh = dict(
+                zip(
+                    df_coois["lenh_sx"].astype(str),
+                    df_coois["mat_prefix"].astype(str),
+                )
+            )
+          if "ma_tp" in df_coois.columns:
+            code_map_sh = dict(
+                zip(
+                    df_coois["ma_tp"].astype(str),
+                    df_coois["mat_prefix"].astype(str),
+                )
+            )
+        df_defects = df_defects.copy()
+        df_defects["mat_prefix"] = df_defects["so_lot"].astype(str).map(
+            order_map_sh
+        )
+        df_defects["mat_prefix"] = (
+            df_defects["mat_prefix"]
+            .fillna(df_defects["ma_vt"].astype(str).map(code_map_sh))
+            .fillna("Khác")
+        )
+
         col_sh_f1, col_sh_f2 = st.columns(2)
         with col_sh_f1:
           sh_filter_loai = st.selectbox(
               "Lọc Phân Hệ:",
               ["Tất cả", "DAU_VAO", "CO_KHI", "TU_TI", "CONG_TO"],
               key="sh_flt_ph",
+          )
+        with col_sh_f2:
+          fam_options_sh = ["Tất cả"] + sorted(
+              df_defects["mat_prefix"].dropna().unique().tolist()
+          )
+          sh_filter_fam = st.selectbox(
+              "Lọc Dòng Sản Phẩm:", fam_options_sh, key="sh_flt_fam"
           )
 
         df_sh_view = df_defects.copy()
@@ -2450,6 +2734,8 @@ if nav in DANH_SACH_LABELS:
               df_sh_view["loai_qc"].str.contains(sh_filter_loai, na=False)
               | df_sh_view["ncc"].str.contains(sh_filter_loai, na=False)
           ]
+        if sh_filter_fam != "Tất cả":
+          df_sh_view = df_sh_view[df_sh_view["mat_prefix"] == sh_filter_fam]
 
         if not df_sh_view.empty and "kieu_loi" in df_sh_view.columns:
           defect_counts = (
@@ -2460,26 +2746,76 @@ if nav in DANH_SACH_LABELS:
           defect_counts = defect_counts[defect_counts["kieu_loi"] != ""]
           defect_counts = defect_counts.sort_values(
               by="sl_khong_dat", ascending=False
-          )
+          ).reset_index(drop=True)
 
           if not defect_counts.empty:
-            fig_err = go.Figure(
+            defect_counts["cum_pct"] = (
+                defect_counts["sl_khong_dat"].cumsum()
+                / defect_counts["sl_khong_dat"].sum()
+                * 100.0
+            )
+            bar_colors_pareto = [
+                DISTINCT_COLORS[i % len(DISTINCT_COLORS)]
+                for i in range(len(defect_counts))
+            ]
+
+            fig_err = make_subplots(specs=[[{"secondary_y": True}]])
+            fig_err.add_trace(
                 go.Bar(
-                    x=defect_counts["sl_khong_dat"],
-                    y=defect_counts["kieu_loi"],
-                    orientation="h",
-                    marker=dict(color=COLOR_DANGER),
-                    text=[f"{v:,.0f}" for v in defect_counts["sl_khong_dat"]],
+                    x=defect_counts["kieu_loi"],
+                    y=defect_counts["sl_khong_dat"],
+                    marker=dict(color=bar_colors_pareto),
+                    text=[
+                        f"{v:,.0f}" for v in defect_counts["sl_khong_dat"]
+                    ],
                     textposition="outside",
-                )
+                    textfont=dict(size=11, family=PLOTLY_FONT),
+                    name="Số Lượng Lỗi",
+                ),
+                secondary_y=False,
+            )
+            fig_err.add_trace(
+                go.Scatter(
+                    x=defect_counts["kieu_loi"],
+                    y=defect_counts["cum_pct"],
+                    mode="lines+markers+text",
+                    line=dict(color=COLOR_WARNING, width=2.5),
+                    marker=dict(size=6, color=COLOR_WARNING),
+                    text=[f"{v:.0f}%" for v in defect_counts["cum_pct"]],
+                    textposition="top center",
+                    textfont=dict(
+                        size=10, family=PLOTLY_FONT, color=COLOR_WARNING
+                    ),
+                    name="% Lũy Kế",
+                ),
+                secondary_y=True,
             )
             fig_err.update_layout(
                 font=dict(family=PLOTLY_FONT, color=PLOTLY_AXIS_TEXT),
-                title="<b>TOP CÁC KIỂU SAI HỎNG PHÁT HIỆN NHIỀU NHẤT</b>",
-                margin=dict(l=10, r=40, t=40, b=10),
-                height=320,
+                title="<b>PARETO — CÁC KIỂU SAI HỎNG PHÁT HIỆN NHIỀU NHẤT</b>",
+                margin=dict(l=10, r=40, t=40, b=90),
+                height=380,
                 paper_bgcolor="#FFFFFF",
                 plot_bgcolor="#FFFFFF",
+                showlegend=False,
+            )
+            fig_err.update_xaxes(
+                tickangle=-30, tickfont=dict(size=10, family=PLOTLY_FONT)
+            )
+            fig_err.update_yaxes(
+                title_text="Số Lượng Lỗi",
+                tickfont=dict(size=11, family=PLOTLY_FONT),
+                showgrid=True,
+                gridcolor=PLOTLY_GRID,
+                secondary_y=False,
+            )
+            fig_err.update_yaxes(
+                title_text="% Lũy Kế",
+                range=[0, 105],
+                ticksuffix="%",
+                tickfont=dict(size=11, family=PLOTLY_FONT, color=COLOR_WARNING),
+                showgrid=False,
+                secondary_y=True,
             )
             st.plotly_chart(
                 fig_err,
@@ -2490,7 +2826,7 @@ if nav in DANH_SACH_LABELS:
 
         st.markdown(
             "##### 📋 Danh Sách Ca Báo Lỗi Chi Tiết — sửa Công Việc Con /"
-            " Kiểu Sai Hỏng / SL Lỗi / Ghi Chú rồi bấm Lưu"
+            " Kiểu Sai Hỏng / SL Lỗi / Ghi Chú, hoặc xoá cả dòng, rồi bấm Lưu"
         )
         df_sh_view = df_sh_view.copy()
         df_sh_view["ngay_kiem_fmt"] = pd.to_datetime(
@@ -2529,7 +2865,7 @@ if nav in DANH_SACH_LABELS:
             df_sh_edit,
             use_container_width=True,
             hide_index=True,
-            num_rows="fixed",
+            num_rows="dynamic",
             disabled=[
                 "ID",
                 "Thời Gian",
@@ -2555,7 +2891,17 @@ if nav in DANH_SACH_LABELS:
             conn = get_db_connection()
             cursor = conn.cursor()
             n_saved = 0
+            original_ids_sh = set(df_sh_edit["ID"].dropna().astype(int))
+            edited_ids_sh = set(edited_sh["ID"].dropna().astype(int))
+            n_deleted = 0
+            for did in original_ids_sh - edited_ids_sh:
+              cursor.execute(
+                  "DELETE FROM tb_qc_dau_vao WHERE id = ?", (int(did),)
+              )
+              n_deleted += 1
             for _, row in edited_sh.iterrows():
+              if pd.isna(row["ID"]):
+                continue
               rid = int(row["ID"])
               cvc = str(row["Công Việc Con"] or "").strip()
               kl = str(row["Kiểu Sai Hỏng"] or "").strip()
@@ -2581,7 +2927,10 @@ if nav in DANH_SACH_LABELS:
               n_saved += 1
             conn.commit()
             conn.close()
-            st.success(f"✅ Đã lưu thay đổi cho {n_saved} bản ghi!")
+            st.success(
+                f"✅ Đã lưu {n_saved} bản ghi sửa đổi, xoá {n_deleted} bản"
+                " ghi!"
+            )
             st.cache_data.clear()
             st.rerun()
           except Exception as ex:

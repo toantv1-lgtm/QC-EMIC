@@ -322,11 +322,17 @@ if "saved_inspector_name" not in st.session_state:
 # ================= 3. BỘ LỌC VÀ THÔNG TIN BÁO CÁO =================
 st.markdown("<div class='mobile-card'>", unsafe_allow_html=True)
 
-nguoi_kiem_input = st.text_input(
-    "👤 HỌ VÀ TÊN NGƯỜI KIỂM TRA:",
-    value=st.session_state["saved_inspector_name"],
-    placeholder="Gõ họ tên người kiểm...",
-)
+col_name, col_ngay_kiem = st.columns([1.8, 1.2])
+with col_name:
+  nguoi_kiem_input = st.text_input(
+      "👤 HỌ VÀ TÊN NGƯỜI KIỂM TRA:",
+      value=st.session_state["saved_inspector_name"],
+      placeholder="Gõ họ tên người kiểm...",
+  )
+with col_ngay_kiem:
+  ngay_kiem_tra_input = st.date_input(
+      "📅 Ngày kiểm tra:", value=date.today(), format="DD/MM/YYYY"
+  )
 if nguoi_kiem_input != st.session_state["saved_inspector_name"]:
   st.session_state["saved_inspector_name"] = nguoi_kiem_input
 
@@ -695,7 +701,9 @@ if selected_opt != options_list[0]:
                 sl_dat,
                 ket_luan,
                 nguoi_kiem_input.strip(),
-                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                datetime.combine(
+                    ngay_kiem_tra_input, datetime.now().time()
+                ).strftime("%Y-%m-%d %H:%M:%S"),
                 ghi_chu,
                 kieu_loi_selected,
                 cong_viec_con_selected,
