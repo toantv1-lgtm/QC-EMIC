@@ -84,6 +84,16 @@ def init_db():
                 ten_cong_viec TEXT
             )
         """)
+    
+    # Bảng lưu trữ mục tiêu chất lượng
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS tb_dm_muc_tieu (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                phan_he TEXT,
+                mat_prefix TEXT,
+                muc_tieu REAL
+            )
+        """)
 
     conn.commit()
     conn.close()
@@ -1072,6 +1082,7 @@ with st.sidebar:
   )
   _nav_button("7.1 Lỗi Sai Hỏng", "nav_61")
   _nav_button("7.2 Công Việc Con", "nav_62")
+  _nav_button("7.3 Mục tiêu chất lượng", "nav_63")
 
   nav = st.session_state.nav_selected
 
@@ -1096,7 +1107,7 @@ DANH_SACH_LABELS = (
     "6.3 Sai Hỏng",
     "6.4 Năng Suất",
 )
-CAI_DAT_LABELS = ("7.1 Lỗi Sai Hỏng", "7.2 Công Việc Con")
+CAI_DAT_LABELS = ("7.1 Lỗi Sai Hỏng", "7.2 Công Việc Con", "7.3 Mục tiêu chất lượng")
 PROTECTED_LABELS = DANH_SACH_LABELS + CAI_DAT_LABELS
 ADMIN_PASSWORD = "123"
 
@@ -1615,6 +1626,15 @@ def render_coois_tab_layout(phan_he_code, title_text):
     st.info(f"💡 Chưa có dữ liệu sản xuất cho phân hệ {title_text}.")
     return
 
+  # Truy xuất mục tiêu chất lượng
+  try:
+    conn = get_db_connection()
+    df_targets = pd.read_sql_query("SELECT mat_prefix, muc_tieu FROM tb_dm_muc_tieu WHERE phan_he = ?", conn, params=(phan_he_code,))
+    conn.close()
+    target_dict = dict(zip(df_targets['mat_prefix'], df_targets['muc_tieu']))
+  except Exception:
+    target_dict = {}
+
   # Truy vấn số liệu QC Sai Hỏng từ CSDL Mobile
   try:
     conn = get_db_connection()
@@ -1629,18 +1649,21 @@ def render_coois_tab_layout(phan_he_code, title_text):
   except Exception:
     df_qc_sub = pd.DataFrame()
 
-  # --- FIX: CHỈ LỌC THÀNH PHẨM (MÃ 5 VÀ MÃ ĐẦU 4 ĐUÔI KSS/CXX/CKC) CHO BẢNG QC_SUB ---
+  # --- FIX 1: CHỈ LỌC THÀNH PHẨM CHO BẢNG QC_SUB (TUTI CHỈ LẤY ĐẦU 5) ---
   if not df_qc_sub.empty:
       ma_vt_qc = df_qc_sub["ma_vt"].astype(str).str.lstrip("0")
       ten_vt_qc = df_qc_sub["ten_vt"].astype(str).str.strip().str.upper()
       
       cond_qc_5 = ma_vt_qc.str.startswith("5")
-      cond_qc_4_special = ma_vt_qc.str.startswith("4") & (
-          ten_vt_qc.str.endswith("KSS") | 
-          ten_vt_qc.str.endswith("CXX") | 
-          ten_vt_qc.str.endswith("CKC")
-      )
-      df_qc_sub = df_qc_sub[cond_qc_5 | cond_qc_4_special].copy()
+      if phan_he_code == "TU_TI":
+          df_qc_sub = df_qc_sub[cond_qc_5].copy()
+      else:
+          cond_qc_4_special = ma_vt_qc.str.startswith("4") & (
+              ten_vt_qc.str.endswith("KSS") | 
+              ten_vt_qc.str.endswith("CXX") | 
+              ten_vt_qc.str.endswith("CKC")
+          )
+          df_qc_sub = df_qc_sub[cond_qc_5 | cond_qc_4_special].copy()
 
   # Nhận diện an toàn cột chứa Số lệnh sản xuất (so_lenh hoặc lenh_sx)
   col_order = (
@@ -1924,8 +1947,6 @@ def render_coois_tab_layout(phan_he_code, title_text):
     )
     chart_card_close()
 
-  # Dữ liệu QC sai hỏng (đầy đủ, không lọc theo có lỗi hay không) để tính tỷ lệ
-  # sai hỏng chính xác — dùng chung cho cả 2 biểu đồ cột bên dưới
   try:
     conn = get_db_connection()
     df_qc_rate = pd.read_sql_query(
@@ -1937,18 +1958,21 @@ def render_coois_tab_layout(phan_he_code, title_text):
   except Exception:
     df_qc_rate = pd.DataFrame()
 
-  # --- FIX: CHỈ LỌC THÀNH PHẨM (MÃ 5 VÀ MÃ ĐẦU 4 ĐUÔI KSS/CXX/CKC) CHO BẢNG QC_RATE ---
+  # --- FIX 2: CHỈ LỌC THÀNH PHẨM CHO BẢNG QC_RATE ---
   if not df_qc_rate.empty:
       ma_vt_rate = df_qc_rate["ma_vt"].astype(str).str.lstrip("0")
       ten_vt_rate = df_qc_rate["ten_vt"].astype(str).str.strip().str.upper()
       
       cond_rate_5 = ma_vt_rate.str.startswith("5")
-      cond_rate_4_special = ma_vt_rate.str.startswith("4") & (
-          ten_vt_rate.str.endswith("KSS") | 
-          ten_vt_rate.str.endswith("CXX") | 
-          ten_vt_rate.str.endswith("CKC")
-      )
-      df_qc_rate = df_qc_rate[cond_rate_5 | cond_rate_4_special].copy()
+      if phan_he_code == "TU_TI":
+          df_qc_rate = df_qc_rate[cond_rate_5].copy()
+      else:
+          cond_rate_4_special = ma_vt_rate.str.startswith("4") & (
+              ten_vt_rate.str.endswith("KSS") | 
+              ten_vt_rate.str.endswith("CXX") | 
+              ten_vt_rate.str.endswith("CKC")
+          )
+          df_qc_rate = df_qc_rate[cond_rate_5 | cond_rate_4_special].copy()
 
   if not df_qc_rate.empty and not df_sub.empty and col_order:
     order_map_rate = (
@@ -1983,19 +2007,21 @@ def render_coois_tab_layout(phan_he_code, title_text):
   else:
     df_qc_rate = pd.DataFrame()
 
-  # --- FIX: BỘ LỌC DÒNG SP Ở HÀNG 2 CHỈ LẤY THÀNH PHẨM ---
+  # --- FIX 3: BỘ LỌC DÒNG SP ---
   if not df_sub.empty:
       ma_tp_prefix = df_sub["ma_tp"].astype(str).str.split(".").str[0].str.lstrip("0")
       ten_tp_upper = df_sub["ten_tp"].astype(str).str.strip().str.upper()
       
       cond_5 = ma_tp_prefix.str.startswith("5")
-      cond_4_special = ma_tp_prefix.str.startswith("4") & (
-          ten_tp_upper.str.endswith("KSS") | 
-          ten_tp_upper.str.endswith("CXX") | 
-          ten_tp_upper.str.endswith("CKC")
-      )
-      
-      sub_5 = df_sub[cond_5 | cond_4_special].copy()
+      if phan_he_code == "TU_TI":
+          sub_5 = df_sub[cond_5].copy()
+      else:
+          cond_4_special = ma_tp_prefix.str.startswith("4") & (
+              ten_tp_upper.str.endswith("KSS") | 
+              ten_tp_upper.str.endswith("CXX") | 
+              ten_tp_upper.str.endswith("CKC")
+          )
+          sub_5 = df_sub[cond_5 | cond_4_special].copy()
   else:
       sub_5 = pd.DataFrame()
 
@@ -2036,7 +2062,7 @@ def render_coois_tab_layout(phan_he_code, title_text):
           m3_qty[int(m_val) - 1] += float(r["sl_ht"])
 
     # Tỷ lệ sai hỏng theo tháng CỦA ĐÚNG DÒNG SP ĐANG CHỌN (trục phải)
-    m_kiem_fam, m_loi_fam = [0.0] * 12, [0.0] * 12
+    m_loi_fam = [0.0] * 12
     if not df_qc_rate.empty:
       df_qc_fam_rate = (
           df_qc_rate[df_qc_rate["mat_prefix"] == sel_fam]
@@ -2047,10 +2073,11 @@ def render_coois_tab_layout(phan_he_code, title_text):
         m_val = r["month"]
         if pd.notna(m_val) and 1 <= int(m_val) <= 12:
           idx = int(m_val) - 1
-          m_kiem_fam[idx] += float(r["sl_kiem"] or 0.0)
           m_loi_fam[idx] += float(r["sl_khong_dat"] or 0.0)
+    
+    # --- FIX 4: SỬA TÍNH TỶ LỆ SAI HỎNG = LỖI / SẢN LƯỢNG (sl_ht) ---
     pct_loi_fam_m = [
-        (m_loi_fam[i] / m_kiem_fam[i] * 100.0) if m_kiem_fam[i] > 0 else None
+        (m_loi_fam[i] / m3_qty[i] * 100.0) if m3_qty[i] > 0 else None
         for i in range(12)
     ]
 
@@ -2071,7 +2098,7 @@ def render_coois_tab_layout(phan_he_code, title_text):
         go.Scatter(
             x=months_labels,
             y=pct_loi_fam_m,
-            name="Tỷ Lệ Sai Hỏng",
+            name="Tỷ Lệ Sai Hỏng (%)",
             mode="lines+markers",
             line=dict(color=COLOR_DANGER, width=2.5),
             marker=dict(size=6, color=COLOR_DANGER),
@@ -2079,6 +2106,21 @@ def render_coois_tab_layout(phan_he_code, title_text):
         ),
         secondary_y=True,
     )
+    
+    # --- VẼ ĐƯỜNG MỤC TIÊU ---
+    target_val = target_dict.get(sel_fam, None)
+    if target_val is not None:
+        fig3.add_trace(
+            go.Scatter(
+                x=months_labels,
+                y=[target_val] * 12,
+                name="Mục Tiêu Lỗi (%)",
+                mode="lines",
+                line=dict(color="#0EA968", width=2, dash="dash"),
+                hoverinfo="y+name"
+            ),
+            secondary_y=True,
+        )
 
     fig3.update_layout(
         font=dict(family=PLOTLY_FONT, color=PLOTLY_AXIS_TEXT),
@@ -2188,8 +2230,7 @@ def render_coois_tab_layout(phan_he_code, title_text):
         DISTINCT_COLORS[i % len(DISTINCT_COLORS)] for i in range(len(fams_x))
     ]
 
-    # Tỷ lệ sai hỏng — theo mã con Bảng 2 (khi đang lọc CE/ME/AMI/EW) hoặc
-    # theo từng dòng sản phẩm (mặc định, ứng với tất cả các dòng)
+    # --- FIX 5: TÍNH LẠI TỶ LỆ THEO TỪNG MÃ SP (SỬ DỤNG MẪU SỐ LÀ deliv_fams) ---
     pct_loi_by_fam = []
     if use_bang2_breakdown:
       code_to_ten = (
@@ -2207,37 +2248,19 @@ def render_coois_tab_layout(phan_he_code, title_text):
         df_qc_rate_fam["sub_code"] = df_qc_rate_fam["ten_lookup"].apply(
             lambda t: classify_sub_code_bang2(sel_fam, t) if pd.notna(t) else None
         )
-        for fam in fams_x:
+        for i, fam in enumerate(fams_x):
           sub_code_rate = df_qc_rate_fam[df_qc_rate_fam["sub_code"] == fam]
-          kiem_sum = (
-              float(sub_code_rate["sl_kiem"].sum())
-              if not sub_code_rate.empty
-              else 0.0
-          )
-          loi_sum = (
-              float(sub_code_rate["sl_khong_dat"].sum())
-              if not sub_code_rate.empty
-              else 0.0
-          )
-          pct_loi_by_fam.append(
-              (loi_sum / kiem_sum * 100.0) if kiem_sum > 0 else None
-          )
+          loi_sum = float(sub_code_rate["sl_khong_dat"].sum()) if not sub_code_rate.empty else 0.0
+          prod_qty = float(deliv_fams[i])
+          pct_loi_by_fam.append((loi_sum / prod_qty * 100.0) if prod_qty > 0 else None)
       else:
         pct_loi_by_fam = [None] * len(fams_x)
     elif not df_qc_rate.empty:
-      for fam in fams_x:
+      for i, fam in enumerate(fams_x):
         sub_fam_rate = df_qc_rate[df_qc_rate["mat_prefix"] == fam]
-        kiem_sum = (
-            float(sub_fam_rate["sl_kiem"].sum()) if not sub_fam_rate.empty else 0.0
-        )
-        loi_sum = (
-            float(sub_fam_rate["sl_khong_dat"].sum())
-            if not sub_fam_rate.empty
-            else 0.0
-        )
-        pct_loi_by_fam.append(
-            (loi_sum / kiem_sum * 100.0) if kiem_sum > 0 else None
-        )
+        loi_sum = float(sub_fam_rate["sl_khong_dat"].sum()) if not sub_fam_rate.empty else 0.0
+        prod_qty = float(deliv_fams[i])
+        pct_loi_by_fam.append((loi_sum / prod_qty * 100.0) if prod_qty > 0 else None)
     else:
       pct_loi_by_fam = [None] * len(fams_x)
 
@@ -2258,7 +2281,7 @@ def render_coois_tab_layout(phan_he_code, title_text):
         go.Scatter(
             x=fams_x,
             y=pct_loi_by_fam,
-            name="Tỷ Lệ Sai Hỏng",
+            name="Tỷ Lệ Sai Hỏng (%)",
             mode="lines+markers",
             line=dict(color=COLOR_DANGER, width=2.5),
             marker=dict(size=6, color=COLOR_DANGER),
@@ -2266,6 +2289,22 @@ def render_coois_tab_layout(phan_he_code, title_text):
         ),
         secondary_y=True,
     )
+    
+    # --- VẼ CÁC ĐIỂM/ĐƯỜNG MỤC TIÊU ---
+    target_vals_by_fam = [target_dict.get(fam, None) for fam in fams_x]
+    if any(v is not None for v in target_vals_by_fam):
+        fig4.add_trace(
+            go.Scatter(
+                x=fams_x,
+                y=target_vals_by_fam,
+                name="Mục Tiêu Lỗi (%)",
+                mode="lines+markers",
+                line=dict(color="#0EA968", width=2, dash="dash"),
+                marker=dict(size=8, symbol="diamond", color="#0EA968"),
+                connectgaps=False
+            ),
+            secondary_y=True,
+        )
 
     fig4.update_layout(
         font=dict(family=PLOTLY_FONT, color=PLOTLY_AXIS_TEXT),
@@ -3307,3 +3346,71 @@ if nav == "7.1 Lỗi Sai Hỏng" and is_authenticated:
 if nav == "7.2 Công Việc Con" and is_authenticated:
   render_section_heading("📋 CÀI ĐẶT DANH MỤC: CÔNG VIỆC CON")
   render_catalog_manager("tb_dm_cong_viec", "ten_cong_viec", "Công Việc Con")
+
+# ================= 11. TAB 7: CÀI ĐẶT MỤC TIÊU CHẤT LƯỢNG =================
+if nav == "7.3 Mục tiêu chất lượng" and is_authenticated:
+  render_section_heading("🎯 CÀI ĐẶT DANH MỤC: MỤC TIÊU CHẤT LƯỢNG")
+  st.markdown("Nhập tỷ lệ lỗi mục tiêu (%) cho từng phân hệ và dòng sản phẩm. Hệ thống sẽ sử dụng dữ liệu này để vẽ đường ranh giới mục tiêu trên biểu đồ.")
+  
+  try:
+    conn = get_db_connection()
+    df_targets = pd.read_sql_query("SELECT id, phan_he, mat_prefix, muc_tieu FROM tb_dm_muc_tieu ORDER BY phan_he ASC, mat_prefix ASC", conn)
+    conn.close()
+  except Exception as ex:
+    df_targets = pd.DataFrame(columns=["id", "phan_he", "mat_prefix", "muc_tieu"])
+    st.error(f"Lỗi tải danh mục mục tiêu: {ex}")
+
+  df_t_disp = df_targets.rename(
+      columns={"id": "ID", "phan_he": "Phân Hệ / Xưởng", "mat_prefix": "Dòng Sản Phẩm / Mã Con", "muc_tieu": "Mục Tiêu Lỗi (%)"}
+  )
+
+  edited_t = st.data_editor(
+      df_t_disp,
+      use_container_width=True,
+      hide_index=True,
+      num_rows="dynamic",
+      column_config={
+          "ID": st.column_config.NumberColumn("ID", disabled=True),
+          "Phân Hệ / Xưởng": st.column_config.SelectboxColumn(
+              "Phân Hệ / Xưởng", options=PHAN_HE_OPTIONS
+          ),
+          "Mục Tiêu Lỗi (%)": st.column_config.NumberColumn(
+              "Mục Tiêu Lỗi (%)", min_value=0.0, max_value=100.0, format="%.2f"
+          )
+      },
+      key="editor_muc_tieu"
+  )
+
+  if st.button("💾 Lưu Mục Tiêu Chất Lượng", type="primary", key="save_muc_tieu"):
+    try:
+      conn = get_db_connection()
+      cursor = conn.cursor()
+      original_ids = set(df_t_disp["ID"].dropna().astype(int))
+      edited_ids = set(edited_t["ID"].dropna().astype(int))
+      for did in original_ids - edited_ids:
+        cursor.execute("DELETE FROM tb_dm_muc_tieu WHERE id = ?", (int(did),))
+      
+      for _, row in edited_t.iterrows():
+        ph = str(row["Phân Hệ / Xưởng"]).strip()
+        mp = str(row["Dòng Sản Phẩm / Mã Con"]).strip()
+        mt = float(row["Mục Tiêu Lỗi (%)"]) if pd.notna(row["Mục Tiêu Lỗi (%)"]) else 0.0
+        
+        if not ph or not mp or str(ph) == "nan" or str(mp) == "nan":
+          continue
+          
+        if pd.isna(row["ID"]):
+          cursor.execute(
+              "INSERT INTO tb_dm_muc_tieu (phan_he, mat_prefix, muc_tieu) VALUES (?, ?, ?)",
+              (ph, mp, mt),
+          )
+        else:
+          cursor.execute(
+              "UPDATE tb_dm_muc_tieu SET phan_he = ?, mat_prefix = ?, muc_tieu = ? WHERE id = ?",
+              (ph, mp, mt, int(row["ID"])),
+          )
+      conn.commit()
+      conn.close()
+      st.success("✅ Đã lưu mục tiêu chất lượng!")
+      st.rerun()
+    except Exception as ex:
+      st.error(f"Lỗi lưu thay đổi: {ex}")
