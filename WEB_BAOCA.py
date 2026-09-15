@@ -224,6 +224,10 @@ def init_db():
       cursor.execute(
           "ALTER TABLE tb_qc_dau_vao ADD COLUMN cong_viec_con TEXT DEFAULT ''"
       )
+    if "sl_huy" not in cols:
+      cursor.execute(
+          "ALTER TABLE tb_qc_dau_vao ADD COLUMN sl_huy REAL DEFAULT 0"
+      )
 
     cursor.execute("""
             CREATE TABLE IF NOT EXISTS tb_dm_loai_loi (
@@ -640,7 +644,7 @@ if selected_opt != options_list[0]:
     else:
       cong_viec_con_selected = sub_task_opt
 
-  col_q1, col_q2, col_q3 = st.columns(3)
+  col_q1, col_q2, col_q3, col_q4 = st.columns(4)
   with col_q1:
     sl_kiem = st.number_input(
         "SL KIỂM:", min_value=1, value=int(selected_item["co_mau"]), step=1
@@ -648,14 +652,15 @@ if selected_opt != options_list[0]:
   with col_q2:
     sl_khong_dat = st.number_input("SL LỖI:", min_value=0, value=0, step=1)
   with col_q3:
+    sl_huy = st.number_input("SL HỦY:", min_value=0, value=0, step=1)
+  with col_q4:
     sl_dat = max(0, sl_kiem - sl_khong_dat)
     st.number_input("SL ĐẠT:", value=int(sl_dat), disabled=True)
 
-  ket_luan = (
-      "Đạt tiêu chuẩn (UD 01)"
-      if sl_khong_dat == 0
-      else "Không đạt - Trả lại (UD 03)"
-  )
+  # Cho phép chọn kết luận
+  ket_luan_opts = ["Đạt", "Không đạt", "Chấp nhận"]
+  default_kl_idx = 0 if sl_khong_dat == 0 else 1
+  ket_luan_selected = st.selectbox("🏁 KẾT LUẬN:", ket_luan_opts, index=default_kl_idx)
 
   defect_list = get_defect_types(selected_item["phan_he"]) + [
       "Lỗi khác / Nhập tay"
@@ -714,8 +719,8 @@ if selected_opt != options_list[0]:
         cursor.execute(
             """
                     INSERT INTO tb_qc_dau_vao 
-                    (loai_qc, so_lot, ma_vt, ten_vt, ncc, ngay_ve, tong_sl_ve, sl_kiem, sl_khong_dat, sl_dat, ket_luan, nguoi_kiem, ngay_kiem, ghi_chu, kieu_loi, cong_viec_con, img1, img2)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (loai_qc, so_lot, ma_vt, ten_vt, ncc, ngay_ve, tong_sl_ve, sl_kiem, sl_khong_dat, sl_dat, ket_luan, nguoi_kiem, ngay_kiem, ghi_chu, kieu_loi, cong_viec_con, img1, img2, sl_huy)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
             (
                 "DAU_VAO" if is_qc_dau_vao else "SAN_XUAT",
@@ -728,7 +733,7 @@ if selected_opt != options_list[0]:
                 sl_kiem,
                 sl_khong_dat,
                 sl_dat,
-                ket_luan,
+                ket_luan_selected,
                 nguoi_kiem_input.strip(),
                 datetime.combine(
                     ngay_kiem_tra_input, datetime.now().time()
@@ -738,6 +743,7 @@ if selected_opt != options_list[0]:
                 cong_viec_con_selected,
                 img1_path,
                 img2_path,
+                sl_huy
             ),
         )
         conn.commit()
