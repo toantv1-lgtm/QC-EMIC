@@ -31,6 +31,23 @@ def to_ddmmyyyy(iso_date_str):
     return str(iso_date_str)
 
 
+LENH_PREFIX_TO_PHAN_HE = {
+    "3011": "TU_TI",
+    "3012": "CO_KHI",
+    "3013": "CONG_TO",
+    "3014": "CONG_TO",
+    "3016": "TTTB_CNC",
+}
+
+
+def derive_phan_he(lenh_sx):
+  """Xác định đúng xưởng theo 4 số đầu lệnh sản xuất:
+  3011=TU_TI, 3012=CO_KHI, 3013/3014=CONG_TO, 3016=TTTB_CNC,
+  các đầu lệnh khác = KHAC (lệnh bảo hành / cải tạo)."""
+  prefix = str(lenh_sx).strip()[:4]
+  return LENH_PREFIX_TO_PHAN_HE.get(prefix, "KHAC")
+
+
 # ---------- Lưu / đọc cấu hình (tên người kiểm gần nhất, bộ lọc gần nhất) ----------
 def get_setting(key, default=""):
   try:
@@ -71,6 +88,7 @@ IMG_SUBDIRS = {
     "CO_KHI": "Co_Khi",
     "TU_TI": "TUTI",
     "CONG_TO": "Cong_To",
+    "TTTB_CNC": "TTTB_CNC",
 }
 
 
@@ -249,6 +267,9 @@ def init_db():
           ("CONG_TO", "Hiệu chuẩn & Bật điểm số"),
           ("CONG_TO", "Thử nghiệm gá đặt nhiệt độ"),
           ("CONG_TO", "Kiểm tra dán tem & Đóng gói"),
+          ("TTTB_CNC", "Gia công CNC theo bản vẽ"),
+          ("TTTB_CNC", "Kiểm tra kích thước gia công"),
+          ("TTTB_CNC", "Hoàn thiện bề mặt sau gia công"),
       ]
       cursor.executemany(
           "INSERT INTO tb_dm_cong_viec (phan_he, ten_cong_viec) VALUES (?, ?)",
@@ -377,7 +398,13 @@ if st.session_state.show_filters:
   else:
     col_f1, col_f2, col_f3 = st.columns(3)
     with col_f1:
-      xuong_opts = ["Tất cả", "Cơ khí (3012)", "TU/TI (3011)", "Công tơ (3013, 3016)"]
+      xuong_opts = [
+          "Tất cả",
+          "Cơ khí (3012)",
+          "TU/TI (3011)",
+          "Công tơ (3013, 3014)",
+          "TTTB CNC (3016)",
+      ]
       filter_xuong = st.selectbox(
           "Xưởng / Phân hệ:",
           xuong_opts,
@@ -504,7 +531,7 @@ if not df_raw.empty:
       so_lenh = str(r.get("lenh_sx", r.get("so_lenh", ""))).strip()
       ma_tp = str(r.get("ma_tp", "")).strip()
       ten_tp = str(r.get("ten_tp", "")).strip()
-      phan_he = str(r.get("phan_he", "")).strip()
+      phan_he = derive_phan_he(so_lenh)
       trang_thai_sx = str(r.get("trang_thai", "")).strip()
       sl_tong_sx = float(r.get("sl_tong", 0.0) or 0.0)
       sl_ht_sx = float(r.get("sl_ht", 0.0) or 0.0)
@@ -517,6 +544,8 @@ if not df_raw.empty:
         if "TU/TI" in filter_xuong and phan_he != "TU_TI":
           continue
         if "Công tơ" in filter_xuong and phan_he != "CONG_TO":
+          continue
+        if "TTTB CNC" in filter_xuong and phan_he != "TTTB_CNC":
           continue
 
       if (

@@ -443,7 +443,7 @@ def chart_card_close():
   st.markdown("</div>", unsafe_allow_html=True)
 
 
-PHAN_HE_OPTIONS = ["DAU_VAO", "CO_KHI", "TU_TI", "CONG_TO"]
+PHAN_HE_OPTIONS = ["DAU_VAO", "CO_KHI", "TU_TI", "CONG_TO", "TTTB_CNC"]
 
 
 def render_catalog_manager(table_name, name_col, item_label):
@@ -681,6 +681,23 @@ def clean_emoji(text):
   return re.sub(r"[^\w\s\(\)\-\/\.\,\:]", "", str(text)).strip()
 
 
+LENH_PREFIX_TO_PHAN_HE = {
+    "3011": "TU_TI",
+    "3012": "CO_KHI",
+    "3013": "CONG_TO",
+    "3014": "CONG_TO",
+    "3016": "TTTB_CNC",
+}
+
+
+def derive_phan_he(lenh_sx):
+  """Xác định đúng xưởng theo 4 số đầu lệnh sản xuất:
+  3011=TU_TI, 3012=CO_KHI, 3013/3014=CONG_TO, 3016=TTTB_CNC,
+  các đầu lệnh khác = KHAC (lệnh bảo hành / cải tạo)."""
+  prefix = str(lenh_sx).strip()[:4]
+  return LENH_PREFIX_TO_PHAN_HE.get(prefix, "KHAC")
+
+
 @st.cache_data(ttl=15)
 def load_data(tu_date, den_date):
   if not os.path.exists(DB_PATH):
@@ -702,6 +719,8 @@ def load_data(tu_date, den_date):
         params=(tu_iso, den_iso),
     )
     conn.close()
+    if not df_coois.empty and "lenh_sx" in df_coois.columns:
+      df_coois["phan_he"] = df_coois["lenh_sx"].apply(derive_phan_he)
     return df_qa32, df_coois
   except Exception:
     return pd.DataFrame(), pd.DataFrame()
@@ -875,22 +894,23 @@ with st.sidebar:
   _nav_button("2. Báo Cáo Xưởng Cơ Khí", "nav_2")
   _nav_button("3. Báo Cáo Xưởng Công Tơ", "nav_3")
   _nav_button("4. Báo Cáo Xưởng TU/TI", "nav_4")
+  _nav_button("5. Báo Cáo Xưởng TTTB CNC", "nav_5")
 
   st.markdown(
-      '<div class="nav-group-label">5. Báo Cáo Tổng Hợp</div>',
+      '<div class="nav-group-label">6. Báo Cáo Tổng Hợp</div>',
       unsafe_allow_html=True,
   )
-  _nav_button("5.1 Danh Sách Vật Tư", "nav_51")
-  _nav_button("5.2 Danh Sách Lệnh Sản Xuất", "nav_52")
-  _nav_button("5.3 Sai Hỏng", "nav_53")
-  _nav_button("5.4 Năng Suất", "nav_54")
+  _nav_button("6.1 Danh Sách Vật Tư", "nav_51")
+  _nav_button("6.2 Danh Sách Lệnh Sản Xuất", "nav_52")
+  _nav_button("6.3 Sai Hỏng", "nav_53")
+  _nav_button("6.4 Năng Suất", "nav_54")
 
   st.markdown(
-      '<div class="nav-group-label">6. Cài Đặt</div>',
+      '<div class="nav-group-label">7. Cài Đặt</div>',
       unsafe_allow_html=True,
   )
-  _nav_button("6.1 Lỗi Sai Hỏng", "nav_61")
-  _nav_button("6.2 Công Việc Con", "nav_62")
+  _nav_button("7.1 Lỗi Sai Hỏng", "nav_61")
+  _nav_button("7.2 Công Việc Con", "nav_62")
 
   nav = st.session_state.nav_selected
 
@@ -910,12 +930,12 @@ with st.sidebar:
     tu_date, den_date = sb_tu, sb_den
 
 DANH_SACH_LABELS = (
-    "5.1 Danh Sách Vật Tư",
-    "5.2 Danh Sách Lệnh Sản Xuất",
-    "5.3 Sai Hỏng",
-    "5.4 Năng Suất",
+    "6.1 Danh Sách Vật Tư",
+    "6.2 Danh Sách Lệnh Sản Xuất",
+    "6.3 Sai Hỏng",
+    "6.4 Năng Suất",
 )
-CAI_DAT_LABELS = ("6.1 Lỗi Sai Hỏng", "6.2 Công Việc Con")
+CAI_DAT_LABELS = ("7.1 Lỗi Sai Hỏng", "7.2 Công Việc Con")
 
 df_qa32, df_coois = load_data(tu_date, den_date)
 
@@ -2013,7 +2033,9 @@ if nav == "2. Báo Cáo Xưởng Cơ Khí":
 if nav == "4. Báo Cáo Xưởng TU/TI":
   render_coois_tab_layout("TU_TI", "🔌 BÁO CÁO TUTI (LỆNH 3011)")
 if nav == "3. Báo Cáo Xưởng Công Tơ":
-  render_coois_tab_layout("CONG_TO", "⚡ BÁO CÁO CÔNG TƠ (LỆNH 3013, 3016)")
+  render_coois_tab_layout("CONG_TO", "⚡ BÁO CÁO CÔNG TƠ (LỆNH 3013, 3014)")
+if nav == "5. Báo Cáo Xưởng TTTB CNC":
+  render_coois_tab_layout("TTTB_CNC", "🛠️ BÁO CÁO TTTB CNC (LỆNH 3016)")
 
 
 # ================= 9. TAB 5: DANH SÁCH CHI TIẾT, NĂNG SUẤT & QUẢN LÝ CÔNG VIỆC CON =================
@@ -2024,7 +2046,7 @@ if nav in DANH_SACH_LABELS:
   )
 
   # SUB-TAB 1: QA32
-  if nav == "5.1 Danh Sách Vật Tư":
+  if nav == "6.1 Danh Sách Vật Tư":
     chart_card_open("⚙️ Bộ Lọc Dữ Liệu QA32")
     col_flt1, col_flt2, col_flt3, col_flt4 = st.columns([1, 1, 1, 1.5])
     with col_flt1:
@@ -2192,7 +2214,7 @@ if nav in DANH_SACH_LABELS:
       st.info("💡 Chưa có dữ liệu vật tư.")
 
   # SUB-TAB 2: COOIS
-  if nav == "5.2 Danh Sách Lệnh Sản Xuất":
+  if nav == "6.2 Danh Sách Lệnh Sản Xuất":
     chart_card_open("⚙️ Bộ Lọc Dữ Liệu COOIS")
     col_f1, col_f2, col_f3, col_f4 = st.columns([1, 1, 1, 1.5])
     with col_f1:
@@ -2204,7 +2226,13 @@ if nav in DANH_SACH_LABELS:
     with col_f2:
       filter_phan_he_l = st.selectbox(
           "Xưởng / Phân hệ:",
-          ["Tất cả", "Cơ khí (CO_KHI)", "TU/TI (TU_TI)", "Công tơ (CONG_TO)"],
+          [
+              "Tất cả",
+              "Cơ khí (CO_KHI)",
+              "TU/TI (TU_TI)",
+              "Công tơ (CONG_TO)",
+              "TTTB CNC (TTTB_CNC)",
+          ],
           key="ds_filter_phan_he_l",
       )
     with col_f3:
@@ -2223,6 +2251,7 @@ if nav in DANH_SACH_LABELS:
         "Cơ khí (CO_KHI)": "CO_KHI",
         "TU/TI (TU_TI)": "TU_TI",
         "Công tơ (CONG_TO)": "CONG_TO",
+        "TTTB CNC (TTTB_CNC)": "TTTB_CNC",
     }
 
     if not df_coois.empty:
@@ -2390,7 +2419,7 @@ if nav in DANH_SACH_LABELS:
       st.info("💡 Chưa có dữ liệu lệnh sản xuất.")
 
   # SUB-TAB 3: BÁO CÁO NĂNG SUẤT CÁ NHÂN VÀ TÍNH NĂNG QUẢN LÝ CÔNG VIỆC CON
-  if nav == "5.4 Năng Suất":
+  if nav == "6.4 Năng Suất":
     try:
       conn = get_db_connection()
       df_qc_logs = pd.read_sql_query(
@@ -2673,7 +2702,7 @@ if nav in DANH_SACH_LABELS:
       st.error(f"⚠️ Lỗi khi tải nhật ký QC: {e}")
 
   # SUB-TAB 4: BÁO CÁO SAI HỎNG CHI TIẾT & BẢNG QUẢN LÝ DANH MỤC LỖI
-  if nav == "5.3 Sai Hỏng":
+  if nav == "6.3 Sai Hỏng":
     st.markdown("#### 🚨 BÁO CÁO PHÂN TÍCH SAI HỎNG")
 
     try:
@@ -2717,7 +2746,7 @@ if nav in DANH_SACH_LABELS:
         with col_sh_f1:
           sh_filter_loai = st.selectbox(
               "Lọc Phân Hệ:",
-              ["Tất cả", "DAU_VAO", "CO_KHI", "TU_TI", "CONG_TO"],
+              ["Tất cả", "DAU_VAO", "CO_KHI", "TU_TI", "CONG_TO", "TTTB_CNC"],
               key="sh_flt_ph",
           )
         with col_sh_f2:
@@ -2989,10 +3018,10 @@ if nav in DANH_SACH_LABELS:
 
 
 # ================= 10. TAB 6: CÀI ĐẶT DANH MỤC (LỖI SAI HỎNG / CÔNG VIỆC CON) =================
-if nav == "6.1 Lỗi Sai Hỏng":
+if nav == "7.1 Lỗi Sai Hỏng":
   render_section_heading("🐞 CÀI ĐẶT DANH MỤC: LỖI SAI HỎNG")
   render_catalog_manager("tb_dm_loai_loi", "ten_loi", "Kiểu Sai Hỏng")
 
-if nav == "6.2 Công Việc Con":
+if nav == "7.2 Công Việc Con":
   render_section_heading("📋 CÀI ĐẶT DANH MỤC: CÔNG VIỆC CON")
   render_catalog_manager("tb_dm_cong_viec", "ten_cong_viec", "Công Việc Con")
