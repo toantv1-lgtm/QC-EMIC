@@ -313,33 +313,57 @@ st.markdown(
         }
         section[data-testid="stSidebar"] > div { padding-top: 1.2rem !important; }
         section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: 0.4rem !important; }
+        /* Mọi khối con (cả tiêu đề lẫn nút) trong sidebar dùng chung 1 mốc lề trái duy nhất */
+        section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div,
+        section[data-testid="stSidebar"] [data-testid="stElementContainer"] {
+            margin-left: 0 !important;
+            padding-left: 0 !important;
+        }
         .sidebar-heading {
             font-size: 11.5px; font-weight: 800; color: var(--text-muted);
             text-transform: uppercase; letter-spacing: 0.08em;
-            margin: 0 0 10px 14px; display: flex; align-items: center; gap: 6px;
+            margin: 0 !important; padding: 0 0 10px 12px;
+            display: flex; align-items: center; gap: 6px;
         }
         .nav-group-label {
             font-size: 11px; font-weight: 800; color: var(--text-faint);
             text-transform: uppercase; letter-spacing: 0.06em;
-            margin: 16px 0 4px 14px;
+            margin: 0 !important; padding: 16px 0 4px 12px;
         }
 
-        /* Menu điều hướng dạng cây ở sidebar: nút phẳng, thẳng hàng, không icon */
-        section[data-testid="stSidebar"] div.stButton > button {
+        /* Menu điều hướng dạng cây ở sidebar: nút phẳng, thẳng hàng lề trái, không icon */
+        section[data-testid="stSidebar"] div.stButton,
+        section[data-testid="stSidebar"] div[data-testid="stButton"] {
+            width: 100% !important; margin: 0 !important; padding: 0 !important;
+        }
+        section[data-testid="stSidebar"] div.stButton > button,
+        section[data-testid="stSidebar"] div[data-testid="stButton"] > button {
             background-color: transparent !important;
             border: none !important;
             box-shadow: none !important;
-            text-align: left !important;
+            display: flex !important;
             justify-content: flex-start !important;
+            align-items: center !important;
+            text-align: left !important;
             font-family: 'Plus Jakarta Sans', sans-serif !important;
             font-weight: 600 !important;
             font-size: 13.5px !important;
             color: var(--text) !important;
-            padding: 9px 14px !important;
+            padding: 9px 12px !important;
             min-height: 38px !important;
+            width: 100% !important;
             border-radius: 10px !important;
-            margin-bottom: 2px !important;
+            margin: 0 0 2px 0 !important;
             transition: background-color 0.12s ease, color 0.12s ease;
+        }
+        /* Bỏ mọi căn giữa / margin ẩn bên trong nút (thẻ p, div, span con) để chữ luôn bám sát lề trái */
+        section[data-testid="stSidebar"] div.stButton > button *,
+        section[data-testid="stSidebar"] div[data-testid="stButton"] > button * {
+            text-align: left !important;
+            justify-content: flex-start !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: auto !important;
         }
         section[data-testid="stSidebar"] div.stButton > button:hover {
             background-color: var(--primary-soft) !important;
