@@ -152,10 +152,22 @@ st.markdown(
         font-size: 11.5px !important; color: #475569 !important; font-weight: 800 !important; text-transform: uppercase;
     }
 
-    /* Ô tải ảnh: không ép style vào label/nút nội bộ của Streamlit nữa (khó kiểm soát,
-       hay bị lệch phiên bản). Chỉ đảm bảo khung đủ rộng, không cắt chữ. */
+    /* Ép hiển thị toàn bộ chữ trên khung Uploader không bị cắt xén (dành cho mobile) */
     [data-testid="stFileUploaderDropzone"] {
         overflow: visible !important;
+        padding: 16px 8px !important;
+    }
+    [data-testid="stFileUploaderDropzone"] span, 
+    [data-testid="stFileUploaderDropzone"] small,
+    [data-testid="stFileUploaderDropzone"] div {
+        white-space: pre-wrap !important;
+        word-break: break-word !important;
+        text-overflow: unset !important;
+        text-align: center !important;
+    }
+    [data-testid="stFileUploader"] label {
+        white-space: normal !important;
+        height: auto !important;
     }
 
     div.stButton > button[kind="primary"] {
@@ -527,6 +539,7 @@ if not df_raw.empty:
           "ngay_ve_display": to_ddmmyyyy(str(r.get("ngay_ve_dt", "")).split()[0]),
           "tong_sl": float(r.get("ft_qty", 0.0) or 0.0),
           "co_mau": float(r.get("by_sample", 5.0) or 5.0),
+          "sl_ht": 0.0,
           "phan_he": "DAU_VAO",
           "is_checked": is_checked,
       })
@@ -587,8 +600,9 @@ if not df_raw.empty:
           "ngay_ve_display": to_ddmmyyyy(
               str(r.get("ngay_lenh_dt", r.get("ngay_lenh", ""))).split()[0]
           ),
-          "tong_sl": float(r.get("sl_tong", 0.0) or 0.0),
-          "co_mau": float(r.get("sl_tong", 10.0) or 10.0),
+          "tong_sl": sl_tong_sx,
+          "co_mau": sl_tong_sx,
+          "sl_ht": sl_ht_sx,
           "phan_he": phan_he if phan_he else "CO_KHI",
           "is_checked": is_checked,
           "trang_thai_sx": trang_thai_sx,
@@ -608,6 +622,16 @@ selected_opt = st.selectbox(
 if selected_opt != options_list[0]:
   idx = options_list.index(selected_opt) - 1
   selected_item = filtered_items[idx]
+  
+  # Cấu trúc HTML thẻ hiển thị khối Lệnh/Lô (Thêm khối Đã hoàn thành cho Lệnh SX)
+  sl_ht_box = ""
+  if not is_qc_dau_vao:
+      sl_ht_box = f"""
+      <div style="grid-column: span 2; background:linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%); padding:6px 10px; border-radius:8px; border:1px solid #A7F3D0;">
+          <span style="color:#065F46; font-size:11px; font-weight:800; display:block;">SẢN LƯỢNG ĐÃ HOÀN THÀNH</span>
+          <b style="color:#064E3B; font-size:15.5px;">{selected_item.get('sl_ht', 0):,.0f}</b>
+      </div>
+      """
 
   st.markdown(
       f"""
@@ -620,8 +644,9 @@ if selected_opt != options_list[0]:
             <div><span style="color:#64748B; font-size:11px; font-weight:800; display:block;">NGÀY VỀ / LỆNH</span><b style="color:#0F172A; font-size:14.5px;">{selected_item['ngay_ve_display']}</b></div>
             <div style="grid-column: span 2;"><span style="color:#64748B; font-size:11px; font-weight:800; display:block;">TÊN MẶT HÀNG</span><b style="color:#334155;">{selected_item['ten_vt']}</b></div>
             <div style="grid-column: span 2;"><span style="color:#64748B; font-size:11px; font-weight:800; display:block;">ĐƠN VỊ / NCC / XƯỞNG</span><b style="color:#334155;">{selected_item['ncc']}</b></div>
-            <div style="background:linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); padding:6px 10px; border-radius:8px; border:1px solid #BFDBFE;"><span style="color:#1E40AF; font-size:11px; font-weight:800; display:block;">TỔNG SỐ LƯỢNG</span><b style="color:#1E3A8A; font-size:15.5px;">{selected_item['tong_sl']:,.0f}</b></div>
+            <div style="background:linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); padding:6px 10px; border-radius:8px; border:1px solid #BFDBFE;"><span style="color:#1E40AF; font-size:11px; font-weight:800; display:block;">TỔNG SỐ LƯỢNG KẾ HOẠCH</span><b style="color:#1E3A8A; font-size:15.5px;">{selected_item['tong_sl']:,.0f}</b></div>
             <div style="background:linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%); padding:6px 10px; border-radius:8px; border:1px solid #FECACA;"><span style="color:#991B1B; font-size:11px; font-weight:800; display:block;">SỐ MẪU KIỂM YÊU CẦU</span><b style="color:#7F1D1D; font-size:15.5px;">{selected_item['co_mau']:,.0f}</b></div>
+            {sl_ht_box}
         </div>
     </div>
     """,
@@ -644,6 +669,7 @@ if selected_opt != options_list[0]:
     else:
       cong_viec_con_selected = sub_task_opt
 
+  # Chia thành 4 cột để có chỗ nhập số lượng hủy
   col_q1, col_q2, col_q3, col_q4 = st.columns(4)
   with col_q1:
     sl_kiem = st.number_input(
@@ -652,7 +678,8 @@ if selected_opt != options_list[0]:
   with col_q2:
     sl_khong_dat = st.number_input("SL LỖI:", min_value=0, value=0, step=1)
   with col_q3:
-    sl_huy = st.number_input("SL HỦY:", min_value=0, value=0, step=1)
+    # Max value của SL Hủy được giới hạn bằng SL Lỗi để hệ thống hiểu Hủy nằm trong Lỗi
+    sl_huy = st.number_input("SL HỦY:", min_value=0, max_value=int(sl_khong_dat), value=0, step=1)
   with col_q4:
     sl_dat = max(0, sl_kiem - sl_khong_dat)
     st.number_input("SL ĐẠT:", value=int(sl_dat), disabled=True)
