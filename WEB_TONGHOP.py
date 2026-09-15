@@ -792,11 +792,9 @@ def classify_tuti(ma_tp, ten_tp):
     return "HT"
   if "VT1" in ten_upper or "VT2" in ten_upper:
     return "VT"
-  if "CP1" in ten_upper or "CP2" in ten_upper:
-    return "CP"
 
   prefix2 = ten_upper[:2]
-  if prefix2 in ["HT", "HB", "VT", "CP"]:
+  if prefix2 in ["HT", "HB", "VT"]:
     return prefix2
   if prefix2 == "CT":
     return "CT"
@@ -3338,16 +3336,16 @@ if nav in DANH_SACH_LABELS:
 
 
 # ================= 10. TAB 6: CÀI ĐẶT DANH MỤC (LỖI SAI HỎNG / CÔNG VIỆC CON) =================
-if nav == "7.1 Lỗi Sai Hỏng" and is_authenticated:
+if nav == "7.1 Lỗi Sai Hỏng":
   render_section_heading("🐞 CÀI ĐẶT DANH MỤC: LỖI SAI HỎNG")
   render_catalog_manager("tb_dm_loai_loi", "ten_loi", "Kiểu Sai Hỏng")
 
-if nav == "7.2 Công Việc Con" and is_authenticated:
+if nav == "7.2 Công Việc Con":
   render_section_heading("📋 CÀI ĐẶT DANH MỤC: CÔNG VIỆC CON")
   render_catalog_manager("tb_dm_cong_viec", "ten_cong_viec", "Công Việc Con")
 
 # ================= 11. TAB 7: CÀI ĐẶT MỤC TIÊU CHẤT LƯỢNG =================
-if nav == "7.3 Mục tiêu chất lượng" and is_authenticated:
+if nav == "7.3 Mục tiêu chất lượng":
   render_section_heading("🎯 CÀI ĐẶT DANH MỤC: MỤC TIÊU CHẤT LƯỢNG")
   st.markdown("Nhập tỷ lệ lỗi mục tiêu (%) cho từng phân hệ và dòng sản phẩm. Hệ thống sẽ sử dụng dữ liệu này để vẽ đường ranh giới mục tiêu trên biểu đồ.")
   
