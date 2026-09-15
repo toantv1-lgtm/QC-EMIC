@@ -1581,8 +1581,8 @@ def render_coois_tab_layout(phan_he_code, title_text):
     )
     chart_card_close()
 
-  # HÀNG 1B: XU HƯỚNG TỶ LỆ SAI HỎNG THEO THÁNG
-  chart_card_open(f"Xu Hướng Tỷ Lệ Sai Hỏng Theo Tháng — {title_clean}")
+  # Dữ liệu QC sai hỏng (đầy đủ, không lọc theo có lỗi hay không) để tính tỷ lệ
+  # sai hỏng chính xác — dùng chung cho cả 2 biểu đồ cột bên dưới
   try:
     conn = get_db_connection()
     df_qc_rate = pd.read_sql_query(
@@ -1595,6 +1595,16 @@ def render_coois_tab_layout(phan_he_code, title_text):
     df_qc_rate = pd.DataFrame()
 
   if not df_qc_rate.empty and not df_sub.empty and col_order:
+    order_map_rate = (
+        dict(zip(df_sub[col_order].astype(str), df_sub["mat_prefix"].astype(str)))
+        if "mat_prefix" in df_sub.columns
+        else {}
+    )
+    code_map_rate = (
+        dict(zip(df_sub["ma_tp"].astype(str), df_sub["mat_prefix"].astype(str)))
+        if "ma_tp" in df_sub.columns and "mat_prefix" in df_sub.columns
+        else {}
+    )
     allowed_orders_rate = set(df_sub[col_order].astype(str).unique())
     allowed_codes_rate = (
         set(df_sub["ma_tp"].astype(str).unique())
@@ -1605,75 +1615,17 @@ def render_coois_tab_layout(phan_he_code, title_text):
         df_qc_rate["so_lot"].astype(str).isin(allowed_orders_rate)
         | df_qc_rate["ma_vt"].astype(str).isin(allowed_codes_rate)
     ].copy()
-  else:
-    df_qc_rate = pd.DataFrame()
-
-  m_kiem_qty, m_loi_qty = [0.0] * 12, [0.0] * 12
-  if not df_qc_rate.empty:
+    df_qc_rate["mat_prefix"] = df_qc_rate["so_lot"].astype(str).map(order_map_rate)
+    df_qc_rate["mat_prefix"] = (
+        df_qc_rate["mat_prefix"]
+        .fillna(df_qc_rate["ma_vt"].astype(str).map(code_map_rate))
+        .fillna("Khác")
+    )
     df_qc_rate["month"] = pd.to_datetime(
         df_qc_rate["ngay_kiem"], errors="coerce"
     ).dt.month
-    for _, r in df_qc_rate.iterrows():
-      m_val = r["month"]
-      if pd.notna(m_val) and 1 <= int(m_val) <= 12:
-        idx = int(m_val) - 1
-        m_kiem_qty[idx] += float(r["sl_kiem"] or 0.0)
-        m_loi_qty[idx] += float(r["sl_khong_dat"] or 0.0)
-
-  pct_loi_m = [
-      (m_loi_qty[i] / m_kiem_qty[i] * 100.0) if m_kiem_qty[i] > 0 else None
-      for i in range(12)
-  ]
-
-  if any(v is not None for v in pct_loi_m):
-    fig_rate = go.Figure()
-    fig_rate.add_trace(
-        go.Scatter(
-            x=months_labels,
-            y=pct_loi_m,
-            mode="lines+markers+text",
-            line=dict(color=COLOR_DANGER, width=2.5),
-            marker=dict(size=7, color=COLOR_DANGER),
-            text=[f"{v:.1f}%" if v is not None else "" for v in pct_loi_m],
-            textposition="top center",
-            textfont=dict(size=10, family=PLOTLY_FONT, color=COLOR_DANGER),
-            connectgaps=False,
-            fill="tozeroy",
-            fillcolor="rgba(226, 61, 77, 0.08)",
-        )
-    )
-    fig_rate.update_layout(
-        font=dict(family=PLOTLY_FONT, color=PLOTLY_AXIS_TEXT),
-        margin=dict(l=30, r=20, t=8, b=40),
-        height=260,
-        paper_bgcolor="#FFFFFF",
-        plot_bgcolor="#FFFFFF",
-        showlegend=False,
-    )
-    fig_rate.update_xaxes(
-        showgrid=False,
-        tickfont=dict(size=11, family=PLOTLY_FONT, color="#6B7280"),
-    )
-    fig_rate.update_yaxes(
-        title_text="% Sai Hỏng",
-        title_font=dict(size=12, color=COLOR_DANGER),
-        ticksuffix="%",
-        tickfont=dict(size=11, family=PLOTLY_FONT, color=PLOTLY_AXIS_TEXT),
-        showgrid=True,
-        gridcolor=PLOTLY_GRID,
-        zeroline=False,
-    )
-    st.plotly_chart(
-        fig_rate,
-        use_container_width=True,
-        config={"displayModeBar": False},
-        key=f"coois_fig_rate_{phan_he_code}",
-    )
   else:
-    st.success(
-        "🎉 Chưa ghi nhận tỷ lệ sai hỏng nào trong khoảng thời gian này!"
-    )
-  chart_card_close()
+    df_qc_rate = pd.DataFrame()
 
   # HÀNG 2: BỘ LỌC DÒNG SP
   sub_5 = (
@@ -1724,7 +1676,26 @@ def render_coois_tab_layout(phan_he_code, title_text):
         if pd.notna(m_val) and 1 <= int(m_val) <= 12:
           m3_qty[int(m_val) - 1] += float(r["sl_ht"])
 
-    fig3 = go.Figure()
+    # Tỷ lệ sai hỏng theo tháng CỦA ĐÚNG DÒNG SP ĐANG CHỌN (trục phải)
+    m_kiem_fam, m_loi_fam = [0.0] * 12, [0.0] * 12
+    if not df_qc_rate.empty:
+      df_qc_fam_rate = (
+          df_qc_rate[df_qc_rate["mat_prefix"] == sel_fam]
+          if sel_fam != "Tất cả dòng sản phẩm"
+          else df_qc_rate
+      )
+      for _, r in df_qc_fam_rate.iterrows():
+        m_val = r["month"]
+        if pd.notna(m_val) and 1 <= int(m_val) <= 12:
+          idx = int(m_val) - 1
+          m_kiem_fam[idx] += float(r["sl_kiem"] or 0.0)
+          m_loi_fam[idx] += float(r["sl_khong_dat"] or 0.0)
+    pct_loi_fam_m = [
+        (m_loi_fam[i] / m_kiem_fam[i] * 100.0) if m_kiem_fam[i] > 0 else None
+        for i in range(12)
+    ]
+
+    fig3 = make_subplots(specs=[[{"secondary_y": True}]])
     fig3.add_trace(
         go.Bar(
             x=months_labels,
@@ -1734,12 +1705,25 @@ def render_coois_tab_layout(phan_he_code, title_text):
             text=[f"{int(v):,}" if v > 0 else "" for v in m3_qty],
             textposition="outside",
             textfont=dict(color=COLOR_PRIMARY, size=11, family=PLOTLY_FONT),
-        )
+        ),
+        secondary_y=False,
+    )
+    fig3.add_trace(
+        go.Scatter(
+            x=months_labels,
+            y=pct_loi_fam_m,
+            name="Tỷ Lệ Sai Hỏng",
+            mode="lines+markers",
+            line=dict(color=COLOR_DANGER, width=2.5),
+            marker=dict(size=6, color=COLOR_DANGER),
+            connectgaps=False,
+        ),
+        secondary_y=True,
     )
 
     fig3.update_layout(
         font=dict(family=PLOTLY_FONT, color=PLOTLY_AXIS_TEXT),
-        margin=dict(l=30, r=20, t=8, b=36),
+        margin=dict(l=30, r=30, t=8, b=36),
         height=PLOT_HEIGHT - 40,
         paper_bgcolor="#FFFFFF",
         plot_bgcolor="#FFFFFF",
@@ -1758,6 +1742,15 @@ def render_coois_tab_layout(phan_he_code, title_text):
         gridcolor=PLOTLY_GRID,
         zeroline=False,
         rangemode="tozero",
+        secondary_y=False,
+    )
+    fig3.update_yaxes(
+        title_text="% Sai Hỏng",
+        title_font=dict(size=12, color=COLOR_DANGER),
+        ticksuffix="%",
+        tickfont=dict(size=11, family=PLOTLY_FONT, color=COLOR_DANGER),
+        showgrid=False,
+        secondary_y=True,
     )
 
     st.plotly_chart(
@@ -1801,21 +1794,54 @@ def render_coois_tab_layout(phan_he_code, title_text):
         DISTINCT_COLORS[i % len(DISTINCT_COLORS)] for i in range(len(fams_x))
     ]
 
-    fig4 = go.Figure()
+    # Tỷ lệ sai hỏng của TỪNG DÒNG SP (ứng với tất cả các dòng, trục phải)
+    pct_loi_by_fam = []
+    if not df_qc_rate.empty:
+      for fam in fams_x:
+        sub_fam_rate = df_qc_rate[df_qc_rate["mat_prefix"] == fam]
+        kiem_sum = (
+            float(sub_fam_rate["sl_kiem"].sum()) if not sub_fam_rate.empty else 0.0
+        )
+        loi_sum = (
+            float(sub_fam_rate["sl_khong_dat"].sum())
+            if not sub_fam_rate.empty
+            else 0.0
+        )
+        pct_loi_by_fam.append(
+            (loi_sum / kiem_sum * 100.0) if kiem_sum > 0 else None
+        )
+    else:
+      pct_loi_by_fam = [None] * len(fams_x)
+
+    fig4 = make_subplots(specs=[[{"secondary_y": True}]])
     fig4.add_trace(
         go.Bar(
             x=fams_x,
             y=deliv_fams,
+            name="SL Hoàn Thành",
             marker=dict(color=bar_colors, cornerradius=6),
             text=[f"{int(v):,}" if v > 0 else "" for v in deliv_fams],
             textposition="outside",
             textfont=dict(color=bar_colors, size=11, family=PLOTLY_FONT),
-        )
+        ),
+        secondary_y=False,
+    )
+    fig4.add_trace(
+        go.Scatter(
+            x=fams_x,
+            y=pct_loi_by_fam,
+            name="Tỷ Lệ Sai Hỏng",
+            mode="lines+markers",
+            line=dict(color=COLOR_DANGER, width=2.5),
+            marker=dict(size=6, color=COLOR_DANGER),
+            connectgaps=False,
+        ),
+        secondary_y=True,
     )
 
     fig4.update_layout(
         font=dict(family=PLOTLY_FONT, color=PLOTLY_AXIS_TEXT),
-        margin=dict(l=30, r=20, t=8, b=36),
+        margin=dict(l=30, r=30, t=8, b=36),
         height=PLOT_HEIGHT - 40,
         paper_bgcolor="#FFFFFF",
         plot_bgcolor="#FFFFFF",
@@ -1835,6 +1861,15 @@ def render_coois_tab_layout(phan_he_code, title_text):
         showgrid=True,
         gridcolor=PLOTLY_GRID,
         zeroline=False,
+        secondary_y=False,
+    )
+    fig4.update_yaxes(
+        title_text="% Sai Hỏng",
+        title_font=dict(size=12, color=COLOR_DANGER),
+        ticksuffix="%",
+        tickfont=dict(size=11, family=PLOTLY_FONT, color=COLOR_DANGER),
+        showgrid=False,
+        secondary_y=True,
     )
 
     st.plotly_chart(
@@ -2551,6 +2586,51 @@ if nav in DANH_SACH_LABELS:
             st.rerun()
           except Exception as ex:
             st.error(f"Lỗi lưu thay đổi: {ex}")
+
+        st.markdown(
+            "<hr style='margin: 16px 0; border-color: #E4E8F0;'>",
+            unsafe_allow_html=True,
+        )
+        st.markdown("##### 🖼️ Xem Ảnh Chụp Kiểm Tra Đã Lưu")
+        img_options = {
+            f"{r['so_lot']} - {r['ma_vt']} - {r['nguoi_kiem']} ({r['ngay_kiem_fmt']})": r[
+                "id"
+            ]
+            for _, r in df_sh_view.iterrows()
+        }
+        sel_img_label = st.selectbox(
+            "Chọn bản ghi cần xem ảnh:",
+            list(img_options.keys()),
+            key="sh_img_record_select",
+        )
+        sel_img_id = img_options[sel_img_label]
+        row_img = df_sh_view[df_sh_view["id"] == sel_img_id].iloc[0]
+
+        col_img1, col_img2 = st.columns(2)
+        with col_img1:
+          if st.button(
+              "🖼️ Mở Ảnh 1", use_container_width=True, key="btn_view_img1"
+          ):
+            path1 = str(row_img.get("img1", "") or "").strip()
+            if path1 and os.path.exists(path1):
+              st.image(path1, use_container_width=True)
+            else:
+              st.warning(
+                  "⚠️ Không tìm thấy file ảnh 1 cho bản ghi này trên máy chủ"
+                  f" ({path1 or 'chưa lưu đường dẫn'})."
+              )
+        with col_img2:
+          if st.button(
+              "🖼️ Mở Ảnh 2", use_container_width=True, key="btn_view_img2"
+          ):
+            path2 = str(row_img.get("img2", "") or "").strip()
+            if path2 and os.path.exists(path2):
+              st.image(path2, use_container_width=True)
+            else:
+              st.warning(
+                  "⚠️ Không tìm thấy file ảnh 2 cho bản ghi này trên máy chủ"
+                  f" ({path2 or 'chưa lưu đường dẫn'})."
+              )
 
       else:
         st.success("🎉 Chưa ghi nhận ca phát sinh sai hỏng nào!")
