@@ -765,34 +765,8 @@ def classify_cong_to(ma_tp, ten_tp):
 def classify_tuti(ma_tp, ten_tp):
   """Dòng sản phẩm xưởng TU/TI (3011) theo Bảng 1."""
   ten_upper = str(ten_tp).strip().upper()
-  prefix4 = ten_upper[:4]
-  if prefix4 == "LPVT":
-    return "LPVT"
-  if prefix4 == "LPCT":
-    return "LPCT"
-
-  # Bán thành phẩm mô tả chung (TM, RM, SC, TC...): tìm mã dòng trong tên
-  if "LPVT" in ten_upper:
-    return "LPVT"
-  if "LPCT" in ten_upper:
-    return "LPCT"
-  for n in ["CT1", "CT2", "CT4", "CT5", "CT7", "CT8"]:
-    if n in ten_upper:
-      return "CT"
-  for n in ["CT3", "CT6", "CT9"]:
-    if n in ten_upper:
-      return "TI"
-  for n in ["PT1", "PT2", "PT4", "PT5", "PT7", "PT8"]:
-    if n in ten_upper:
-      return "PT"
-  for n in ["PT3", "PT6", "PT9"]:
-    if n in ten_upper:
-      return "TU"
-  if "HT1" in ten_upper or "HT2" in ten_upper or "HT3" in ten_upper:
-    return "HT"
-  if "VT1" in ten_upper or "VT2" in ten_upper:
-    return "VT"
-
+  
+  # 1. KIỂM TRA 2 KÝ TỰ ĐẦU TIÊN TRƯỚC (Ưu tiên Thành phẩm)
   prefix2 = ten_upper[:2]
   if prefix2 in ["HT", "HB", "VT"]:
     return prefix2
@@ -800,6 +774,26 @@ def classify_tuti(ma_tp, ten_tp):
     return "CT"
   if prefix2 == "PT":
     return "PT"
+
+  # 2. SAU ĐÓ MỚI KIỂM TRA 4 KÝ TỰ (LPVT, LPCT)
+  prefix4 = ten_upper[:4]
+  if prefix4 == "LPVT":
+    return "LPVT"
+  if prefix4 == "LPCT":
+    return "LPCT"
+
+  # 3. CUỐI CÙNG MỚI QUÉT TÌM BÁN THÀNH PHẨM (kiểm tra bằng cách cắt đúng 3 ký tự đầu)
+  prefix3 = ten_upper[:3]
+  if prefix3 in ["CT1", "CT2", "CT4", "CT5", "CT7", "CT8"]:
+    return "CT"
+  if prefix3 in ["CT3", "CT6", "CT9"]:
+    return "TI"
+  if prefix3 in ["PT1", "PT2", "PT4", "PT5", "PT7", "PT8"]:
+    return "PT"
+  if prefix3 in ["PT3", "PT6", "PT9"]:
+    return "TU"
+  if prefix3 in ["HT1", "HT2", "HT3"]:
+    return "HT"
 
   return prefix2 if len(prefix2) > 0 else "N/A"
 
@@ -2510,7 +2504,7 @@ if nav in DANH_SACH_LABELS:
 
   # SUB-TAB 2: COOIS
   if nav == "6.2 Danh Sách Lệnh Sản Xuất":
-    chart_card_open("⚙️ Bộ Lọc Dữ Liệu COOIS")
+    chart_card_open("⚙️ Bộ Lọc Dữ Luợu COOIS")
     col_f1, col_f2, col_f3, col_f4 = st.columns([1, 1, 1, 1.5])
     with col_f1:
       filter_status_l = st.selectbox(
