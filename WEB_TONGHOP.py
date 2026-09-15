@@ -1629,6 +1629,19 @@ def render_coois_tab_layout(phan_he_code, title_text):
   except Exception:
     df_qc_sub = pd.DataFrame()
 
+  # --- FIX: CHỈ LỌC THÀNH PHẨM (MÃ 5 VÀ MÃ ĐẦU 4 ĐUÔI KSS/CXX/CKC) CHO BẢNG QC_SUB ---
+  if not df_qc_sub.empty:
+      ma_vt_qc = df_qc_sub["ma_vt"].astype(str).str.lstrip("0")
+      ten_vt_qc = df_qc_sub["ten_vt"].astype(str).str.strip().str.upper()
+      
+      cond_qc_5 = ma_vt_qc.str.startswith("5")
+      cond_qc_4_special = ma_vt_qc.str.startswith("4") & (
+          ten_vt_qc.str.endswith("KSS") | 
+          ten_vt_qc.str.endswith("CXX") | 
+          ten_vt_qc.str.endswith("CKC")
+      )
+      df_qc_sub = df_qc_sub[cond_qc_5 | cond_qc_4_special].copy()
+
   # Nhận diện an toàn cột chứa Số lệnh sản xuất (so_lenh hoặc lenh_sx)
   col_order = (
       "so_lenh"
@@ -1916,13 +1929,26 @@ def render_coois_tab_layout(phan_he_code, title_text):
   try:
     conn = get_db_connection()
     df_qc_rate = pd.read_sql_query(
-        "SELECT so_lot, ma_vt, sl_kiem, sl_khong_dat, ngay_kiem FROM"
+        "SELECT so_lot, ma_vt, ten_vt, sl_kiem, sl_khong_dat, ngay_kiem FROM"
         " tb_qc_dau_vao WHERE loai_qc = 'SAN_XUAT'",
         conn,
     )
     conn.close()
   except Exception:
     df_qc_rate = pd.DataFrame()
+
+  # --- FIX: CHỈ LỌC THÀNH PHẨM (MÃ 5 VÀ MÃ ĐẦU 4 ĐUÔI KSS/CXX/CKC) CHO BẢNG QC_RATE ---
+  if not df_qc_rate.empty:
+      ma_vt_rate = df_qc_rate["ma_vt"].astype(str).str.lstrip("0")
+      ten_vt_rate = df_qc_rate["ten_vt"].astype(str).str.strip().str.upper()
+      
+      cond_rate_5 = ma_vt_rate.str.startswith("5")
+      cond_rate_4_special = ma_vt_rate.str.startswith("4") & (
+          ten_vt_rate.str.endswith("KSS") | 
+          ten_vt_rate.str.endswith("CXX") | 
+          ten_vt_rate.str.endswith("CKC")
+      )
+      df_qc_rate = df_qc_rate[cond_rate_5 | cond_rate_4_special].copy()
 
   if not df_qc_rate.empty and not df_sub.empty and col_order:
     order_map_rate = (
@@ -1957,19 +1983,22 @@ def render_coois_tab_layout(phan_he_code, title_text):
   else:
     df_qc_rate = pd.DataFrame()
 
-  # HÀNG 2: BỘ LỌC DÒNG SP
-  sub_5 = (
-      df_sub[
-          df_sub["ma_tp"]
-          .astype(str)
-          .str.split(".")
-          .str[0]
-          .str.lstrip("0")
-          .str.startswith("5")
-      ].copy()
-      if not df_sub.empty
-      else pd.DataFrame()
-  )
+  # --- FIX: BỘ LỌC DÒNG SP Ở HÀNG 2 CHỈ LẤY THÀNH PHẨM ---
+  if not df_sub.empty:
+      ma_tp_prefix = df_sub["ma_tp"].astype(str).str.split(".").str[0].str.lstrip("0")
+      ten_tp_upper = df_sub["ten_tp"].astype(str).str.strip().str.upper()
+      
+      cond_5 = ma_tp_prefix.str.startswith("5")
+      cond_4_special = ma_tp_prefix.str.startswith("4") & (
+          ten_tp_upper.str.endswith("KSS") | 
+          ten_tp_upper.str.endswith("CXX") | 
+          ten_tp_upper.str.endswith("CKC")
+      )
+      
+      sub_5 = df_sub[cond_5 | cond_4_special].copy()
+  else:
+      sub_5 = pd.DataFrame()
+
   raw_fams = (
       [
           str(x).strip()
