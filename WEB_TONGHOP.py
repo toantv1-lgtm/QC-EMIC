@@ -68,6 +68,10 @@ def init_db():
       cursor.execute(
           "ALTER TABLE tb_qc_dau_vao ADD COLUMN cong_viec_con TEXT DEFAULT ''"
       )
+    if "sl_huy" not in cols:
+      cursor.execute(
+          "ALTER TABLE tb_qc_dau_vao ADD COLUMN sl_huy REAL DEFAULT 0"
+      )
 
     cursor.execute("""
             CREATE TABLE IF NOT EXISTS tb_dm_loai_loi (
@@ -767,30 +771,6 @@ def classify_tuti(ma_tp, ten_tp):
   if prefix4 == "LPCT":
     return "LPCT"
 
-  prefix2 = ten_upper[:2]
-  if prefix2 == "HT":
-    return "HT"
-  if prefix2 == "CT":
-    for n in ["CT1", "CT2", "CT4", "CT5", "CT7", "CT8"]:
-      if n in ten_upper:
-        return "CT"
-    for n in ["CT3", "CT6", "CT9"]:
-      if n in ten_upper:
-        return "TI"
-    return "CT"
-  if prefix2 == "VT":
-    return "VT"
-  if prefix2 == "CP":
-    return "CP"
-  if prefix2 == "PT":
-    for n in ["PT1", "PT2", "PT4", "PT5", "PT7", "PT8"]:
-      if n in ten_upper:
-        return "PT"
-    for n in ["PT3", "PT6", "PT9"]:
-      if n in ten_upper:
-        return "TU"
-    return "PT"
-
   # Bán thành phẩm mô tả chung (TM, RM, SC, TC...): tìm mã dòng trong tên
   if "LPVT" in ten_upper:
     return "LPVT"
@@ -814,7 +794,16 @@ def classify_tuti(ma_tp, ten_tp):
     return "VT"
   if "CP1" in ten_upper or "CP2" in ten_upper:
     return "CP"
-  return "Khác"
+
+  prefix2 = ten_upper[:2]
+  if prefix2 in ["HT", "HB", "VT", "CP"]:
+    return prefix2
+  if prefix2 == "CT":
+    return "CT"
+  if prefix2 == "PT":
+    return "PT"
+
+  return prefix2 if len(prefix2) > 0 else "N/A"
 
 
 def classify_tttb_cnc(ma_tp, ten_tp):
@@ -955,6 +944,10 @@ if st.session_state.get("trigger_export_all"):
     )
     conn.close()
 
+    # Đảm bảo cột sl_huy có sẵn (nếu CSDL cũ chưa có)
+    if "sl_huy" not in df_exp_qc.columns:
+        df_exp_qc["sl_huy"] = 0.0
+
     # Bảng tổng hợp theo tháng (sản lượng COOIS)
     if not df_exp_coois.empty:
       df_exp_coois_m = df_exp_coois.copy()
@@ -980,6 +973,7 @@ if st.session_state.get("trigger_export_all"):
           .groupby(["kieu_loi"])
           .agg(
               So_Luong_Loi=("sl_khong_dat", "sum"),
+              So_Luong_Huy=("sl_huy", "sum"),
               So_Ca_Bao_Loi=("id", "count"),
           )
           .reset_index()
@@ -991,6 +985,7 @@ if st.session_state.get("trigger_export_all"):
               So_Luot_Kiem=("id", "count"),
               Tong_SL_Kiem=("sl_kiem", "sum"),
               Tong_SL_Loi=("sl_khong_dat", "sum"),
+              Tong_SL_Huy=("sl_huy", "sum"),
           )
           .reset_index()
           .sort_values("So_Luot_Kiem", ascending=False)
@@ -1109,27 +1104,9 @@ DANH_SACH_LABELS = (
 )
 CAI_DAT_LABELS = ("7.1 Lỗi Sai Hỏng", "7.2 Công Việc Con", "7.3 Mục tiêu chất lượng")
 PROTECTED_LABELS = DANH_SACH_LABELS + CAI_DAT_LABELS
-ADMIN_PASSWORD = "123"
 
 is_authenticated = True
-if nav in PROTECTED_LABELS:
-  if not st.session_state.get("admin_authenticated"):
-    is_authenticated = False
-    render_section_heading("🔒 KHU VỰC YÊU CẦU MẬT KHẨU")
-    st.info("Mục 6 và 7 yêu cầu nhập mật khẩu để truy cập.")
-    pw_col1, pw_col2 = st.columns([1.5, 1])
-    with pw_col1:
-      admin_pw_input = st.text_input(
-          "Nhập mật khẩu:", type="password", key="admin_pw_input"
-      )
-    with pw_col2:
-      st.markdown("<div style='height:25px;'></div>", unsafe_allow_html=True)
-      if st.button("🔓 Xác Nhận", type="primary", key="admin_pw_submit"):
-        if admin_pw_input == ADMIN_PASSWORD:
-          st.session_state["admin_authenticated"] = True
-          st.rerun()
-        else:
-          st.error("❌ Sai mật khẩu, vui lòng thử lại!")
+st.session_state["admin_authenticated"] = True
 
 df_qa32, df_coois = load_data(tu_date, den_date)
 
@@ -1649,7 +1626,7 @@ def render_coois_tab_layout(phan_he_code, title_text):
   except Exception:
     df_qc_sub = pd.DataFrame()
 
-  # --- FIX 1: CHỈ LỌC THÀNH PHẨM CHO BẢNG QC_SUB (TUTI CHỈ LẤY ĐẦU 5) ---
+  # --- CHỈ LỌC THÀNH PHẨM CHO BẢNG QC_SUB (TUTI CHỈ LẤY ĐẦU 5) ---
   if not df_qc_sub.empty:
       ma_vt_qc = df_qc_sub["ma_vt"].astype(str).str.lstrip("0")
       ten_vt_qc = df_qc_sub["ten_vt"].astype(str).str.strip().str.upper()
@@ -1958,7 +1935,7 @@ def render_coois_tab_layout(phan_he_code, title_text):
   except Exception:
     df_qc_rate = pd.DataFrame()
 
-  # --- FIX 2: CHỈ LỌC THÀNH PHẨM CHO BẢNG QC_RATE ---
+  # --- CHỈ LỌC THÀNH PHẨM CHO BẢNG QC_RATE ---
   if not df_qc_rate.empty:
       ma_vt_rate = df_qc_rate["ma_vt"].astype(str).str.lstrip("0")
       ten_vt_rate = df_qc_rate["ten_vt"].astype(str).str.strip().str.upper()
@@ -2007,7 +1984,7 @@ def render_coois_tab_layout(phan_he_code, title_text):
   else:
     df_qc_rate = pd.DataFrame()
 
-  # --- FIX 3: BỘ LỌC DÒNG SP ---
+  # --- BỘ LỌC DÒNG SP ---
   if not df_sub.empty:
       ma_tp_prefix = df_sub["ma_tp"].astype(str).str.split(".").str[0].str.lstrip("0")
       ten_tp_upper = df_sub["ten_tp"].astype(str).str.strip().str.upper()
@@ -2075,7 +2052,7 @@ def render_coois_tab_layout(phan_he_code, title_text):
           idx = int(m_val) - 1
           m_loi_fam[idx] += float(r["sl_khong_dat"] or 0.0)
     
-    # --- FIX 4: SỬA TÍNH TỶ LỆ SAI HỎNG = LỖI / SẢN LƯỢNG (sl_ht) ---
+    # --- TÍNH TỶ LỆ SAI HỎNG = LỖI / SẢN LƯỢNG (sl_ht) ---
     pct_loi_fam_m = [
         (m_loi_fam[i] / m3_qty[i] * 100.0) if m3_qty[i] > 0 else None
         for i in range(12)
@@ -2230,7 +2207,7 @@ def render_coois_tab_layout(phan_he_code, title_text):
         DISTINCT_COLORS[i % len(DISTINCT_COLORS)] for i in range(len(fams_x))
     ]
 
-    # --- FIX 5: TÍNH LẠI TỶ LỆ THEO TỪNG MÃ SP (SỬ DỤNG MẪU SỐ LÀ deliv_fams) ---
+    # --- TÍNH TỶ LỆ THEO TỪNG MÃ SP (SỬ DỤNG MẪU SỐ LÀ deliv_fams) ---
     pct_loi_by_fam = []
     if use_bang2_breakdown:
       code_to_ten = (
@@ -2359,7 +2336,7 @@ if nav == "5. Báo Cáo Xưởng TTTB CNC":
 
 
 # ================= 9. TAB 5: DANH SÁCH CHI TIẾT, NĂNG SUẤT & QUẢN LÝ CÔNG VIỆC CON =================
-if nav in DANH_SACH_LABELS and is_authenticated:
+if nav in DANH_SACH_LABELS:
   render_section_heading(
       "🔍 QUẢN LÝ DANH SÁCH CHI TIẾT VẬT TƯ, LỆNH SẢN XUẤT, NĂNG SUẤT & CÔNG"
       " VIỆC"
@@ -2745,7 +2722,7 @@ if nav in DANH_SACH_LABELS and is_authenticated:
       df_qc_logs = pd.read_sql_query(
           "SELECT id, loai_qc, so_lot, ma_vt, ten_vt, ncc, sl_kiem,"
           " sl_khong_dat, sl_dat, ket_luan, nguoi_kiem, ngay_kiem, ghi_chu,"
-          " kieu_loi, cong_viec_con FROM tb_qc_dau_vao ORDER BY ngay_kiem"
+          " kieu_loi, cong_viec_con, sl_huy FROM tb_qc_dau_vao ORDER BY ngay_kiem"
           " DESC",
           conn,
       )
@@ -2757,6 +2734,9 @@ if nav in DANH_SACH_LABELS and is_authenticated:
         )
         df_qc_logs["Ngay_Format"] = df_qc_logs["ngay_kiem_dt"].dt.strftime(
             "%d/%m/%Y"
+        )
+        df_qc_logs["Ngay_Nhap_Format"] = df_qc_logs["ngay_kiem_dt"].dt.strftime(
+            "%d/%m/%Y %H:%M:%S"
         )
 
         chart_card_open("👨‍💼 Bộ Lọc Tính Năng Suất Làm Việc QC")
@@ -2867,6 +2847,7 @@ if nav in DANH_SACH_LABELS and is_authenticated:
         df_display["ID"] = df_filtered["id"].values
         df_display["STT"] = np.arange(1, len(df_filtered) + 1)
         df_display["Ngày kiểm"] = df_filtered["ngay_kiem_dt"].dt.date.values
+        df_display["Ngày nhập"] = df_filtered["Ngay_Nhap_Format"].values
         df_display["Người kiểm tra"] = df_filtered["nguoi_kiem"].values
         df_display["Loại QC"] = df_filtered["loai_qc"].map(
             {"DAU_VAO": "QC Đầu Vào", "SAN_XUAT": "QC Sản Xuất"}
@@ -2878,6 +2859,7 @@ if nav in DANH_SACH_LABELS and is_authenticated:
         df_display["Công việc con"] = df_filtered["cong_viec_con"].values
         df_display["SL Kiểm"] = df_filtered["sl_kiem"].values
         df_display["SL Lỗi"] = df_filtered["sl_khong_dat"].values
+        df_display["SL Hủy"] = df_filtered["sl_huy"].values
         df_display["SL Đạt"] = df_filtered["sl_dat"].values
         df_display["Kết luận"] = df_filtered["ket_luan"].values
         df_display["Ghi chú"] = df_filtered["ghi_chu"].values
@@ -2896,6 +2878,9 @@ if nav in DANH_SACH_LABELS and is_authenticated:
                 "Ngày kiểm": st.column_config.DateColumn(
                     "Ngày kiểm", format="DD/MM/YYYY"
                 ),
+                "Ngày nhập": st.column_config.TextColumn(
+                    "Ngày nhập", disabled=True
+                ),
                 "Loại QC": st.column_config.SelectboxColumn(
                     "Loại QC", options=["QC Đầu Vào", "QC Sản Xuất"]
                 ),
@@ -2905,15 +2890,15 @@ if nav in DANH_SACH_LABELS and is_authenticated:
                 "SL Lỗi": st.column_config.NumberColumn(
                     "SL Lỗi", format="%d", min_value=0
                 ),
+                "SL Hủy": st.column_config.NumberColumn(
+                    "SL Hủy", format="%d", min_value=0
+                ),
                 "SL Đạt": st.column_config.NumberColumn(
                     "SL Đạt", format="%d", disabled=True
                 ),
                 "Kết luận": st.column_config.SelectboxColumn(
                     "Kết luận",
-                    options=[
-                        "Đạt tiêu chuẩn (UD 01)",
-                        "Không đạt - Trả lại (UD 03)",
-                    ],
+                    options=["Đạt", "Không đạt", "Chấp nhận", "Đạt tiêu chuẩn (UD 01)", "Không đạt - Trả lại (UD 03)"],
                 ),
             },
             use_container_width=True,
@@ -2954,6 +2939,9 @@ if nav in DANH_SACH_LABELS and is_authenticated:
               sl_loi_v = (
                   float(row["SL Lỗi"]) if pd.notna(row["SL Lỗi"]) else 0.0
               )
+              sl_huy_v = (
+                  float(row["SL Hủy"]) if "SL Hủy" in row and pd.notna(row["SL Hủy"]) else 0.0
+              )
               sl_dat_v = max(0.0, sl_kiem_v - sl_loi_v)
               ngay_kiem_v = row["Ngày kiểm"]
               if pd.isna(ngay_kiem_v):
@@ -2970,7 +2958,7 @@ if nav in DANH_SACH_LABELS and is_authenticated:
                   "UPDATE tb_qc_dau_vao SET nguoi_kiem = ?, loai_qc = ?,"
                   " so_lot = ?, ma_vt = ?, ten_vt = ?, ncc = ?,"
                   " cong_viec_con = ?, sl_kiem = ?, sl_khong_dat = ?,"
-                  " sl_dat = ?, ket_luan = ?, ghi_chu = ?, ngay_kiem = ?"
+                  " sl_dat = ?, ket_luan = ?, ghi_chu = ?, ngay_kiem = ?, sl_huy = ?"
                   " WHERE id = ?",
                   (
                       str(row["Người kiểm tra"] or "").strip(),
@@ -2986,6 +2974,7 @@ if nav in DANH_SACH_LABELS and is_authenticated:
                       str(row["Kết luận"] or "").strip(),
                       str(row["Ghi chú"] or "").strip(),
                       ngay_kiem_str,
+                      sl_huy_v,
                       rid,
                   ),
               )
@@ -3035,6 +3024,10 @@ if nav in DANH_SACH_LABELS and is_authenticated:
       conn.close()
 
       if not df_defects.empty:
+        # Đảm bảo cột sl_huy có sẵn (nếu CSDL cũ)
+        if "sl_huy" not in df_defects.columns:
+            df_defects["sl_huy"] = 0.0
+
         # Ghép "Dòng sản phẩm" (mat_prefix) từ COOIS để lọc đúng dòng SP
         order_map_sh, code_map_sh = {}, {}
         if not df_coois.empty and "mat_prefix" in df_coois.columns:
@@ -3176,7 +3169,7 @@ if nav in DANH_SACH_LABELS and is_authenticated:
 
         st.markdown(
             "##### 📋 Danh Sách Ca Báo Lỗi Chi Tiết — sửa Công Việc Con /"
-            " Kiểu Sai Hỏng / SL Lỗi / Ghi Chú, hoặc xoá cả dòng, rồi bấm Lưu"
+            " Kiểu Sai Hỏng / SL Lỗi / SL Hủy / Ghi Chú, hoặc xoá cả dòng, rồi bấm Lưu"
         )
         df_sh_view = df_sh_view.copy()
         df_sh_view["ngay_kiem_fmt"] = pd.to_datetime(
@@ -3194,11 +3187,12 @@ if nav in DANH_SACH_LABELS and is_authenticated:
             "kieu_loi",
             "sl_kiem",
             "sl_khong_dat",
+            "sl_huy",
             "ghi_chu",
         ]].copy()
         df_sh_edit.columns = [
             "ID",
-            "Thời Gian",
+            "Ngày nhập",
             "Người Kiểm",
             "Lô/Lệnh",
             "Mã Hàng",
@@ -3208,6 +3202,7 @@ if nav in DANH_SACH_LABELS and is_authenticated:
             "Kiểu Sai Hỏng",
             "SL Kiểm",
             "SL Lỗi",
+            "SL Hủy",
             "Ghi Chú Chi Tiết",
         ]
 
@@ -3218,7 +3213,7 @@ if nav in DANH_SACH_LABELS and is_authenticated:
             num_rows="dynamic",
             disabled=[
                 "ID",
-                "Thời Gian",
+                "Ngày nhập",
                 "Người Kiểm",
                 "Lô/Lệnh",
                 "Mã Hàng",
@@ -3228,6 +3223,7 @@ if nav in DANH_SACH_LABELS and is_authenticated:
             ],
             column_config={
                 "SL Lỗi": st.column_config.NumberColumn("SL Lỗi", min_value=0),
+                "SL Hủy": st.column_config.NumberColumn("SL Hủy", min_value=0),
             },
             key="editor_sh_defects",
         )
@@ -3258,6 +3254,9 @@ if nav in DANH_SACH_LABELS and is_authenticated:
               sl_loi = (
                   float(row["SL Lỗi"]) if pd.notna(row["SL Lỗi"]) else 0.0
               )
+              sl_huy = (
+                  float(row["SL Hủy"]) if "SL Hủy" in row and pd.notna(row["SL Hủy"]) else 0.0
+              )
               sl_kiem_val = (
                   float(row["SL Kiểm"]) if pd.notna(row["SL Kiểm"]) else 0.0
               )
@@ -3270,9 +3269,9 @@ if nav in DANH_SACH_LABELS and is_authenticated:
               )
               cursor.execute(
                   "UPDATE tb_qc_dau_vao SET cong_viec_con = ?, kieu_loi = ?,"
-                  " sl_khong_dat = ?, sl_dat = ?, ket_luan = ?, ghi_chu = ?"
+                  " sl_khong_dat = ?, sl_dat = ?, ket_luan = ?, ghi_chu = ?, sl_huy = ?"
                   " WHERE id = ?",
-                  (cvc, kl, sl_loi, sl_dat_val, ket_luan_val, ghi_chu_val, rid),
+                  (cvc, kl, sl_loi, sl_dat_val, ket_luan_val, ghi_chu_val, sl_huy, rid),
               )
               n_saved += 1
             conn.commit()
