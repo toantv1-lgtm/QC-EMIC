@@ -152,22 +152,22 @@ st.markdown(
         font-size: 11.5px !important; color: #475569 !important; font-weight: 800 !important; text-transform: uppercase;
     }
 
-    /* Ép hiển thị toàn bộ chữ trên khung Uploader không bị cắt xén (dành cho mobile) */
-    [data-testid="stFileUploaderDropzone"] {
-        overflow: visible !important;
-        padding: 16px 8px !important;
-    }
+    /* Ẩn các đoạn văn bản hướng dẫn mặc định của Streamlit (bỏ div lỗi và chữ thừa Upload) */
     [data-testid="stFileUploaderDropzone"] span, 
-    [data-testid="stFileUploaderDropzone"] small,
-    [data-testid="stFileUploaderDropzone"] div {
-        white-space: pre-wrap !important;
-        word-break: break-word !important;
-        text-overflow: unset !important;
-        text-align: center !important;
+    [data-testid="stFileUploaderDropzone"] small {
+        display: none !important; 
     }
-    [data-testid="stFileUploader"] label {
+    [data-testid="stFileUploaderDropzone"] {
+        padding: 12px 10px !important;
+        align-items: center !important;
+    }
+    [data-testid="stFileUploaderDropzone"] button {
+        width: 100% !important;
         white-space: normal !important;
-        height: auto !important;
+        word-wrap: break-word !important;
+    }
+    [data-testid="stNumberInput"] small {
+        display: none !important;
     }
 
     div.stButton > button[kind="primary"] {
@@ -445,7 +445,6 @@ if st.session_state.show_filters:
       set_setting("filter_trang_thai_sx", filter_trang_thai_sx)
   st.markdown("</div>", unsafe_allow_html=True)
 else:
-  # Bộ lọc đang ẩn: vẫn cần gán giá trị mặc định để phần code phía dưới chạy được
   tu_date = first_day_of_month
   den_date = today
   status_filter = get_setting("status_filter_dv", "Chưa kiểm")
@@ -511,8 +510,6 @@ if not df_raw.empty:
       ten_vt = str(r.get("ten_vt", "")).strip()
       ncc = str(r.get("ncc", "")).strip()
       xac_nhan_sap = str(r.get("xac_nhan_sap", "")).strip()
-      # Trạng thái vật tư lấy theo mã UD của SAP: 01/02/03 = đã kiểm,
-      # rỗng / "Chưa XN" hoặc bất kỳ giá trị nào khác = chưa kiểm
       is_checked = xac_nhan_sap in UD_DA_XAC_NHAN
 
       if status_filter == "Chưa kiểm" and is_checked:
@@ -552,7 +549,6 @@ if not df_raw.empty:
       trang_thai_sx = str(r.get("trang_thai", "")).strip()
       sl_tong_sx = float(r.get("sl_tong", 0.0) or 0.0)
       sl_ht_sx = float(r.get("sl_ht", 0.0) or 0.0)
-      # Trạng thái "đã làm" của lệnh SX: đã hoàn thành đủ số lượng (sl_ht >= sl_tong)
       is_checked = sl_tong_sx > 0 and sl_ht_sx >= sl_tong_sx
 
       if filter_xuong != "Tất cả":
@@ -623,7 +619,7 @@ if selected_opt != options_list[0]:
   idx = options_list.index(selected_opt) - 1
   selected_item = filtered_items[idx]
   
-  # Cấu trúc HTML thẻ hiển thị khối Lệnh/Lô (Thêm khối Đã hoàn thành cho Lệnh SX)
+  # Cấu trúc HTML thẻ hiển thị khối Lệnh/Lô
   sl_ht_box = ""
   if not is_qc_dau_vao:
       sl_ht_box = f"""
@@ -653,7 +649,6 @@ if selected_opt != options_list[0]:
       unsafe_allow_html=True,
   )
 
-  # BỔ SUNG Ô CHỌN CÔNG VIỆC CON / CÔNG ĐOẠN
   sub_task_list = get_sub_tasks(selected_item["phan_he"]) + [
       "Công việc khác / Nhập tay"
   ]
@@ -669,8 +664,7 @@ if selected_opt != options_list[0]:
     else:
       cong_viec_con_selected = sub_task_opt
 
-  # Chia thành 4 cột để có chỗ nhập số lượng hủy
-  col_q1, col_q2, col_q3, col_q4 = st.columns(4)
+  col_q1, col_q2, col_q3 = st.columns(3)
   with col_q1:
     sl_kiem = st.number_input(
         "SL KIỂM:", min_value=1, value=int(selected_item["co_mau"]), step=1
@@ -678,50 +672,44 @@ if selected_opt != options_list[0]:
   with col_q2:
     sl_khong_dat = st.number_input("SL LỖI:", min_value=0, value=0, step=1)
   with col_q3:
-    # Max value của SL Hủy được giới hạn bằng SL Lỗi để hệ thống hiểu Hủy nằm trong Lỗi
-    sl_huy = st.number_input("SL HỦY:", min_value=0, max_value=int(sl_khong_dat), value=0, step=1)
-  with col_q4:
     sl_dat = max(0, sl_kiem - sl_khong_dat)
     st.number_input("SL ĐẠT:", value=int(sl_dat), disabled=True)
 
-  # Cho phép chọn kết luận
   ket_luan_opts = ["Đạt", "Không đạt", "Chấp nhận"]
   default_kl_idx = 0 if sl_khong_dat == 0 else 1
   ket_luan_selected = st.selectbox("🏁 KẾT LUẬN:", ket_luan_opts, index=default_kl_idx)
 
-  defect_list = get_defect_types(selected_item["phan_he"]) + [
-      "Lỗi khác / Nhập tay"
-  ]
+  defect_list = get_defect_types(selected_item["phan_he"]) + ["Lỗi khác / Nhập tay"]
   kieu_loi_selected = ""
+  sl_huy = 0
 
   if sl_khong_dat > 0:
+    st.markdown("<h5 style='color:#E23D4D; margin-top:8px;'>⚠️ Phân tích Lỗi & Hủy</h5>", unsafe_allow_html=True)
     col_err1, col_err2 = st.columns(2)
     with col_err1:
-      loai_loi_opt = st.selectbox(
-          "🚨 KIỂU SAI HỎNG / PHÂN LOẠI LỖI:", defect_list
-      )
+      sl_huy = st.number_input("SL HỦY (Trong tổng số lỗi):", min_value=0, value=0, step=1)
+      if sl_huy > sl_khong_dat:
+          st.warning("⚠️ CẢNH BÁO: SL Hủy không được lớn hơn SL Lỗi!")
+    with col_err2:
+      loai_loi_opt = st.selectbox("KIỂU SAI HỎNG:", defect_list)
       if loai_loi_opt == "Lỗi khác / Nhập tay":
-        kieu_loi_selected = st.text_input(
-            "Tên lỗi cụ thể:", placeholder="Gõ mô tả lỗi ngắn..."
-        )
+        kieu_loi_selected = st.text_input("Tên lỗi cụ thể:", placeholder="Gõ mô tả lỗi ngắn...")
       else:
         kieu_loi_selected = loai_loi_opt
-    with col_err2:
-      ghi_chu = st.text_input(
-          "📝 GHI CHÚ BỔ SUNG:", placeholder="Mô tả chi tiết lỗi..."
-      )
+        
+    ghi_chu = st.text_input("📝 GHI CHÚ BỔ SUNG:", placeholder="Mô tả chi tiết lỗi...")
   else:
-    ghi_chu = st.text_input(
-        "📝 GHI CHÚ BỔ SUNG:", placeholder="Mô tả chi tiết lỗi..."
-    )
+    ghi_chu = st.text_input("📝 GHI CHÚ BỔ SUNG:", placeholder="Ghi chú thêm (nếu có)...")
 
   st.markdown("<hr style='border-color:#CBD5E1;'>", unsafe_allow_html=True)
-  img1_file = st.file_uploader("📷 Chụp / Tải Ảnh 1", type=["png", "jpg", "jpeg"])
-  img2_file = st.file_uploader("📷 Chụp / Tải Ảnh 2", type=["png", "jpg", "jpeg"])
+  img1_file = st.file_uploader("📷 TẢI ẢNH 1", type=["png", "jpg", "jpeg"])
+  img2_file = st.file_uploader("📷 TẢI ẢNH 2", type=["png", "jpg", "jpeg"])
 
   if st.button("🚀 GỬI BÁO CÁO VỀ HỆ THỐNG", type="primary", use_container_width=True):
     if not nguoi_kiem_input.strip():
       st.error("❌ Vui lòng nhập Họ và tên Người kiểm tra!")
+    elif sl_huy > sl_khong_dat:
+      st.error("❌ Không thể gửi báo cáo vì Số Lượng Hủy lớn hơn Số Lượng Lỗi!")
     else:
       img1_path, img2_path = "", ""
       time_str = datetime.now().strftime("%d%m%Y_%H%M%S")
