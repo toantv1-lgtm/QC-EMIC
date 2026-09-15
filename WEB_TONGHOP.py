@@ -698,6 +698,158 @@ def derive_phan_he(lenh_sx):
   return LENH_PREFIX_TO_PHAN_HE.get(prefix, "KHAC")
 
 
+def _normalize_ten(ten_tp):
+  return re.sub(r"[^A-Z0-9]", "", str(ten_tp).upper())
+
+
+# ================= 3B. PHÂN LOẠI DÒNG SẢN PHẨM THEO BẢNG 1 / BẢNG 2 =================
+def classify_cong_to(ma_tp, ten_tp):
+  """Dòng sản phẩm xưởng Công Tơ (3013, 3014) theo Bảng 1 + carve-out AMI (Bảng 2)."""
+  ma_tp = str(ma_tp).strip()
+  ten_upper = str(ten_tp).strip().upper()
+  ten_norm = _normalize_ten(ten_tp)
+  is_dau5 = ma_tp.startswith("5")
+  is_dau4 = ma_tp.startswith("4")
+
+  # AMI: các mã ME41A / ME42A / CE14A tách riêng khỏi ME / CE (Bảng 2)
+  if "ME41A" in ten_norm or "ME42A" in ten_norm or "CE14A" in ten_norm:
+    return "AMI"
+
+  prefix2 = ten_upper[:2]
+  if prefix2 == "CE":
+    if is_dau5:
+      return "CE"
+    if is_dau4 and (ten_upper.endswith("KSS") or ten_upper.endswith("CXX")):
+      return "CE"
+  if prefix2 == "ME":
+    if is_dau5:
+      return "ME"
+    if is_dau4 and (ten_upper.endswith("KSS") or ten_upper.endswith("CXX")):
+      return "ME"
+  if prefix2 == "VA":
+    return "VA"
+  if prefix2 == "EW":
+    if is_dau5:
+      return "EW"
+    if is_dau4 and ten_upper.endswith("CKC"):
+      return "EW"
+  if prefix2 in ("DC", "MD", "PM", "MO", "HU"):
+    if prefix2 == "MD" and "WM" in ten_upper:
+      return "TBTT ĐHN"
+    return "TBTT Công tơ"
+
+  # Bán thành phẩm mô tả chung (BP, CỤ, BỘ, NẮ...): tìm mã con Bảng 2 trong tên
+  for code in ["CE18", "CE38", "CE14", "CE28", "CE58"]:
+    if code in ten_norm:
+      return "CE"
+  for code in ["ME40", "ME41", "ME42", "ME43"]:
+    if code in ten_norm:
+      return "ME"
+  return "Khác"
+
+
+def classify_tuti(ma_tp, ten_tp):
+  """Dòng sản phẩm xưởng TU/TI (3011) theo Bảng 1."""
+  ten_upper = str(ten_tp).strip().upper()
+  prefix4 = ten_upper[:4]
+  if prefix4 == "LPVT":
+    return "LPVT"
+  if prefix4 == "LPCT":
+    return "LPCT"
+
+  prefix2 = ten_upper[:2]
+  if prefix2 == "HT":
+    return "HT"
+  if prefix2 == "CT":
+    for n in ["CT1", "CT2", "CT4", "CT5", "CT7", "CT8"]:
+      if n in ten_upper:
+        return "CT"
+    for n in ["CT3", "CT6", "CT9"]:
+      if n in ten_upper:
+        return "TI"
+    return "CT"
+  if prefix2 == "VT":
+    return "VT"
+  if prefix2 == "CP":
+    return "CP"
+  if prefix2 == "PT":
+    for n in ["PT1", "PT2", "PT4", "PT5", "PT7", "PT8"]:
+      if n in ten_upper:
+        return "PT"
+    for n in ["PT3", "PT6", "PT9"]:
+      if n in ten_upper:
+        return "TU"
+    return "PT"
+
+  # Bán thành phẩm mô tả chung (TM, RM, SC, TC...): tìm mã dòng trong tên
+  if "LPVT" in ten_upper:
+    return "LPVT"
+  if "LPCT" in ten_upper:
+    return "LPCT"
+  for n in ["CT1", "CT2", "CT4", "CT5", "CT7", "CT8"]:
+    if n in ten_upper:
+      return "CT"
+  for n in ["CT3", "CT6", "CT9"]:
+    if n in ten_upper:
+      return "TI"
+  for n in ["PT1", "PT2", "PT4", "PT5", "PT7", "PT8"]:
+    if n in ten_upper:
+      return "PT"
+  for n in ["PT3", "PT6", "PT9"]:
+    if n in ten_upper:
+      return "TU"
+  if "HT1" in ten_upper or "HT2" in ten_upper or "HT3" in ten_upper:
+    return "HT"
+  if "VT1" in ten_upper or "VT2" in ten_upper:
+    return "VT"
+  if "CP1" in ten_upper or "CP2" in ten_upper:
+    return "CP"
+  return "Khác"
+
+
+def classify_tttb_cnc(ma_tp, ten_tp):
+  """Dòng sản phẩm xưởng TTTB CNC (3016) theo Bảng 1."""
+  ten_upper = str(ten_tp).strip().upper()
+  if ten_upper[:2] == "FE":
+    return "TBTT báo cháy"
+  for pfx in ["TH", "HỆ", "BỘ", "TB"]:
+    if ten_upper.startswith(pfx.upper()):
+      return "Bộ báo cháy liên gia"
+  return "Khác"
+
+
+def derive_mat_prefix(phan_he, ma_tp, ten_tp):
+  if phan_he == "CONG_TO":
+    return classify_cong_to(ma_tp, ten_tp)
+  if phan_he == "TU_TI":
+    return classify_tuti(ma_tp, ten_tp)
+  if phan_he == "TTTB_CNC":
+    return classify_tttb_cnc(ma_tp, ten_tp)
+  return None  # Giữ nguyên mat_prefix gốc cho các xưởng khác (VD: CO_KHI)
+
+
+# Bảng 2 — mã con chi tiết trong từng nhóm CE / ME / AMI / EW (dùng cho biểu
+# đồ "Tổng Sản Lượng Cả Năm" khi người dùng chọn đúng 1 trong 4 nhóm này)
+BANG2_SUB_CODES = {
+    "CE": ["CE18", "CE38", "CE14", "CE28", "CE58"],
+    "ME": ["ME40", "ME41", "ME42", "ME43"],
+    "AMI": ["ME41A", "ME42A", "CE14A"],
+}
+
+
+def classify_sub_code_bang2(dong_chinh, ten_tp):
+  """Trả về mã con Bảng 2 (VD: CE18, ME41A...) cho 1 dòng sản phẩm CE/ME/AMI.
+  Với EW: tự gộp nhóm theo 8 ký tự đầu tiên của tên (đúng như Bảng 2 mô tả)."""
+  ten_norm = _normalize_ten(ten_tp)
+  if dong_chinh == "EW":
+    ten_clean = str(ten_tp).strip().upper()
+    return ten_clean[:8] if len(ten_clean) >= 8 else ten_clean
+  for code in BANG2_SUB_CODES.get(dong_chinh, []):
+    if code in ten_norm:
+      return code
+  return "Khác"
+
+
 @st.cache_data(ttl=15)
 def load_data(tu_date, den_date):
   if not os.path.exists(DB_PATH):
@@ -721,6 +873,15 @@ def load_data(tu_date, den_date):
     conn.close()
     if not df_coois.empty and "lenh_sx" in df_coois.columns:
       df_coois["phan_he"] = df_coois["lenh_sx"].apply(derive_phan_he)
+      new_mat_prefix = df_coois.apply(
+          lambda r: derive_mat_prefix(
+              r["phan_he"], r.get("ma_tp", ""), r.get("ten_tp", "")
+          ),
+          axis=1,
+      )
+      df_coois["mat_prefix"] = new_mat_prefix.where(
+          new_mat_prefix.notna(), df_coois.get("mat_prefix")
+      )
     return df_qa32, df_coois
   except Exception:
     return pd.DataFrame(), pd.DataFrame()
@@ -936,6 +1097,28 @@ DANH_SACH_LABELS = (
     "6.4 Năng Suất",
 )
 CAI_DAT_LABELS = ("7.1 Lỗi Sai Hỏng", "7.2 Công Việc Con")
+PROTECTED_LABELS = DANH_SACH_LABELS + CAI_DAT_LABELS
+ADMIN_PASSWORD = "123"
+
+is_authenticated = True
+if nav in PROTECTED_LABELS:
+  if not st.session_state.get("admin_authenticated"):
+    is_authenticated = False
+    render_section_heading("🔒 KHU VỰC YÊU CẦU MẬT KHẨU")
+    st.info("Mục 6 và 7 yêu cầu nhập mật khẩu để truy cập.")
+    pw_col1, pw_col2 = st.columns([1.5, 1])
+    with pw_col1:
+      admin_pw_input = st.text_input(
+          "Nhập mật khẩu:", type="password", key="admin_pw_input"
+      )
+    with pw_col2:
+      st.markdown("<div style='height:25px;'></div>", unsafe_allow_html=True)
+      if st.button("🔓 Xác Nhận", type="primary", key="admin_pw_submit"):
+        if admin_pw_input == ADMIN_PASSWORD:
+          st.session_state["admin_authenticated"] = True
+          st.rerun()
+        else:
+          st.error("❌ Sai mật khẩu, vui lòng thử lại!")
 
 df_qa32, df_coois = load_data(tu_date, den_date)
 
@@ -1909,8 +2092,43 @@ def render_coois_tab_layout(phan_he_code, title_text):
     chart_card_close()
 
   with col4:
-    chart_card_open("Tổng Sản Lượng Cả Năm Các Mã Đầu 5")
-    if not sub_5.empty:
+    use_bang2_breakdown = (
+        phan_he_code == "CONG_TO" and sel_fam in ("CE", "ME", "AMI", "EW")
+    )
+    chart_card_open(
+        f"Tổng Sản Lượng Cả Năm — Chi Tiết Mã Con Dòng {sel_fam}"
+        if use_bang2_breakdown
+        else "Tổng Sản Lượng Cả Năm Các Mã Đầu 5"
+    )
+    if use_bang2_breakdown:
+      sub_fam_5 = (
+          sub_5[sub_5["mat_prefix"] == sel_fam].copy()
+          if not sub_5.empty
+          else pd.DataFrame()
+      )
+      if not sub_fam_5.empty:
+        sub_fam_5["sub_code"] = sub_fam_5["ten_tp"].apply(
+            lambda t: classify_sub_code_bang2(sel_fam, t)
+        )
+        summary_fams = (
+            sub_fam_5.groupby("sub_code")[["sl_ht"]].sum().reset_index()
+        )
+        fams_x = [
+            str(val)
+            for val in summary_fams["sub_code"].tolist()
+            if pd.notna(val) and str(val).strip()
+        ]
+        if not fams_x:
+          fams_x, deliv_fams = ["Trống"], [0.0]
+        else:
+          summary_fams = summary_fams[summary_fams["sub_code"].isin(fams_x)]
+          fams_x, deliv_fams = (
+              summary_fams["sub_code"].tolist(),
+              summary_fams["sl_ht"].values,
+          )
+      else:
+        fams_x, deliv_fams = ["Không có SP"], [0.0]
+    elif not sub_5.empty:
       summary_fams = (
           sub_5.groupby("mat_prefix")[["sl_ht"]].sum().reset_index()
       )
@@ -1941,9 +2159,43 @@ def render_coois_tab_layout(phan_he_code, title_text):
         DISTINCT_COLORS[i % len(DISTINCT_COLORS)] for i in range(len(fams_x))
     ]
 
-    # Tỷ lệ sai hỏng của TỪNG DÒNG SP (ứng với tất cả các dòng, trục phải)
+    # Tỷ lệ sai hỏng — theo mã con Bảng 2 (khi đang lọc CE/ME/AMI/EW) hoặc
+    # theo từng dòng sản phẩm (mặc định, ứng với tất cả các dòng)
     pct_loi_by_fam = []
-    if not df_qc_rate.empty:
+    if use_bang2_breakdown:
+      code_to_ten = (
+          dict(zip(sub_5["ma_tp"].astype(str), sub_5["ten_tp"].astype(str)))
+          if not sub_5.empty
+          else {}
+      )
+      if not df_qc_rate.empty:
+        df_qc_rate_fam = df_qc_rate[
+            df_qc_rate["mat_prefix"] == sel_fam
+        ].copy()
+        df_qc_rate_fam["ten_lookup"] = df_qc_rate_fam["ma_vt"].astype(
+            str
+        ).map(code_to_ten)
+        df_qc_rate_fam["sub_code"] = df_qc_rate_fam["ten_lookup"].apply(
+            lambda t: classify_sub_code_bang2(sel_fam, t) if pd.notna(t) else None
+        )
+        for fam in fams_x:
+          sub_code_rate = df_qc_rate_fam[df_qc_rate_fam["sub_code"] == fam]
+          kiem_sum = (
+              float(sub_code_rate["sl_kiem"].sum())
+              if not sub_code_rate.empty
+              else 0.0
+          )
+          loi_sum = (
+              float(sub_code_rate["sl_khong_dat"].sum())
+              if not sub_code_rate.empty
+              else 0.0
+          )
+          pct_loi_by_fam.append(
+              (loi_sum / kiem_sum * 100.0) if kiem_sum > 0 else None
+          )
+      else:
+        pct_loi_by_fam = [None] * len(fams_x)
+    elif not df_qc_rate.empty:
       for fam in fams_x:
         sub_fam_rate = df_qc_rate[df_qc_rate["mat_prefix"] == fam]
         kiem_sum = (
@@ -2039,7 +2291,7 @@ if nav == "5. Báo Cáo Xưởng TTTB CNC":
 
 
 # ================= 9. TAB 5: DANH SÁCH CHI TIẾT, NĂNG SUẤT & QUẢN LÝ CÔNG VIỆC CON =================
-if nav in DANH_SACH_LABELS:
+if nav in DANH_SACH_LABELS and is_authenticated:
   render_section_heading(
       "🔍 QUẢN LÝ DANH SÁCH CHI TIẾT VẬT TƯ, LỆNH SẢN XUẤT, NĂNG SUẤT & CÔNG"
       " VIỆC"
@@ -2794,6 +3046,7 @@ if nav in DANH_SACH_LABELS:
                     x=defect_counts["kieu_loi"],
                     y=defect_counts["sl_khong_dat"],
                     marker=dict(color=bar_colors_pareto),
+                    width=0.35,
                     text=[
                         f"{v:,.0f}" for v in defect_counts["sl_khong_dat"]
                     ],
@@ -3018,10 +3271,10 @@ if nav in DANH_SACH_LABELS:
 
 
 # ================= 10. TAB 6: CÀI ĐẶT DANH MỤC (LỖI SAI HỎNG / CÔNG VIỆC CON) =================
-if nav == "7.1 Lỗi Sai Hỏng":
+if nav == "7.1 Lỗi Sai Hỏng" and is_authenticated:
   render_section_heading("🐞 CÀI ĐẶT DANH MỤC: LỖI SAI HỎNG")
   render_catalog_manager("tb_dm_loai_loi", "ten_loi", "Kiểu Sai Hỏng")
 
-if nav == "7.2 Công Việc Con":
+if nav == "7.2 Công Việc Con" and is_authenticated:
   render_section_heading("📋 CÀI ĐẶT DANH MỤC: CÔNG VIỆC CON")
   render_catalog_manager("tb_dm_cong_viec", "ten_cong_viec", "Công Việc Con")
