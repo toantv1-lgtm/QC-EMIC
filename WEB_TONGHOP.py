@@ -2750,7 +2750,7 @@ if nav in DANH_SACH_LABELS:
         with col_flt_type:
           selected_loai_qc = st.selectbox(
               "🎯 Phân hệ kiểm:",
-              ["Tất cả", "QC Đầu Vào (DAU_VAO)", "QC Sản Xuất (SAN_XUAT)"],
+              ["Tất cả", "QC Đầu Vào (DAU_VAO)", "QC Sản Xuất (SAN_XUAT)", "QC Phát Sinh (PHAT_SINH)"],
               key="ns_loai_qc",
           )
 
@@ -2789,6 +2789,8 @@ if nav in DANH_SACH_LABELS:
           df_filtered = df_filtered[df_filtered["loai_qc"] == "DAU_VAO"]
         elif selected_loai_qc == "QC Sản Xuất (SAN_XUAT)":
           df_filtered = df_filtered[df_filtered["loai_qc"] == "SAN_XUAT"]
+        elif selected_loai_qc == "QC Phát Sinh (PHAT_SINH)":
+          df_filtered = df_filtered[df_filtered["loai_qc"] == "PHAT_SINH"]
 
         df_filtered = df_filtered[
             (df_filtered["ngay_kiem_dt"].dt.date >= ns_tu_ngay)
@@ -2842,7 +2844,7 @@ if nav in DANH_SACH_LABELS:
         df_display["Ngày nhập"] = df_filtered["Ngay_Nhap_Format"].values
         df_display["Người kiểm tra"] = df_filtered["nguoi_kiem"].values
         df_display["Loại QC"] = df_filtered["loai_qc"].map(
-            {"DAU_VAO": "QC Đầu Vào", "SAN_XUAT": "QC Sản Xuất"}
+            {"DAU_VAO": "QC Đầu Vào", "SAN_XUAT": "QC Sản Xuất", "PHAT_SINH": "QC Phát Sinh"}
         )
         df_display["Lô / Lệnh SX"] = df_filtered["so_lot"].values
         df_display["Mã mặt hàng"] = df_filtered["ma_vt"].values
@@ -2874,7 +2876,7 @@ if nav in DANH_SACH_LABELS:
                     "Ngày nhập", disabled=True
                 ),
                 "Loại QC": st.column_config.SelectboxColumn(
-                    "Loại QC", options=["QC Đầu Vào", "QC Sản Xuất"]
+                    "Loại QC", options=["QC Đầu Vào", "QC Sản Xuất", "QC Phát Sinh"]
                 ),
                 "SL Kiểm": st.column_config.NumberColumn(
                     "SL Kiểm", format="%d", min_value=0
@@ -2919,6 +2921,7 @@ if nav in DANH_SACH_LABELS:
             loai_qc_rev = {
                 "QC Đầu Vào": "DAU_VAO",
                 "QC Sản Xuất": "SAN_XUAT",
+                "QC Phát Sinh": "PHAT_SINH",
             }
             n_saved_ns = 0
             for _, row in edited_ns.iterrows():
@@ -2935,17 +2938,25 @@ if nav in DANH_SACH_LABELS:
                   float(row["SL Hủy"]) if "SL Hủy" in row and pd.notna(row["SL Hủy"]) else 0.0
               )
               sl_dat_v = max(0.0, sl_kiem_v - sl_loi_v)
+              
               ngay_kiem_v = row["Ngày kiểm"]
               if pd.isna(ngay_kiem_v):
                 ngay_kiem_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
               else:
-                time_part = datetime.now().time()
+                # Giữ nguyên Giờ:Phút:Giây từ cột 'Ngày nhập' cũ để không bị ghi đè
+                old_time_str = str(row.get("Ngày nhập", ""))[-8:] 
+                try:
+                    time_part = datetime.strptime(old_time_str, "%H:%M:%S").time()
+                except:
+                    time_part = datetime.now().time() # Dự phòng nếu lỗi
+                
                 ngay_kiem_str = datetime.combine(
                     ngay_kiem_v
                     if not isinstance(ngay_kiem_v, str)
                     else pd.to_datetime(ngay_kiem_v).date(),
                     time_part,
                 ).strftime("%Y-%m-%d %H:%M:%S")
+              
               cursor.execute(
                   "UPDATE tb_qc_dau_vao SET nguoi_kiem = ?, loai_qc = ?,"
                   " so_lot = ?, ma_vt = ?, ten_vt = ?, ncc = ?,"
@@ -3051,7 +3062,7 @@ if nav in DANH_SACH_LABELS:
         with col_sh_f1:
           sh_filter_loai = st.selectbox(
               "Lọc Phân Hệ:",
-              ["Tất cả", "DAU_VAO", "CO_KHI", "TU_TI", "CONG_TO", "TTTB_CNC"],
+              ["Tất cả", "DAU_VAO", "CO_KHI", "TU_TI", "CONG_TO", "TTTB_CNC", "PHAT_SINH"],
               key="sh_flt_ph",
           )
         with col_sh_f2:
